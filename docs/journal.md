@@ -76,10 +76,29 @@ Researched 12 different window frameworks and built a **hybrid approach**:
 9. **`SM_CXSMICON` is wrong for tray icons** — Windows 11 tray uses `SM_CXICON`
 10. **Window `SizeToContent="Height"` breaks positioning** — use `ActualHeight` after `Show()`
 
+## 2026-03-21 — Day 2: Polish and UX
+
+### UI Refinements
+- **Themed context menu** — custom `ToolStripProfessionalRenderer` with dark/light colors, rounded hover highlights, matching the Windows system theme. Updates live on theme switch.
+- **"Open" (bold)** added to top of right-click menu for quick access to settings.
+- **Scroll counter in styled card** — bordered panel with emoji, large accent-colored number, and "accelerated scrolls" subtitle. Counts gestures (250ms+ gap = new operation), not individual ticks. Persists across restarts via `totalScrollCount` in config.json.
+- **Window expands upward** when advanced panel opens — bottom edge stays anchored to tray area.
+- **Tray icon sizing** — switched from `SM_CXSMICON` (too small) to `SM_CXICON` to match other Win11 tray icons. Body proportions at 90% height / 56% width.
+
+### Config Defaults Updated
+Based on real-world usage, changed defaults to match the user's preferred settings:
+- Scroll Speed: 1.5x → 1.0x (no base multiplier, pure acceleration)
+- Acceleration: 0.4 → 0.8 (more aggressive velocity response)
+- Max Speed Cap: 12x → 30x (slider max raised to 50x)
+- UWP window rules: sendinput → passthrough (user preferred native scroll in UWP)
+
+### Double Freeze Research
+Deep-dived into why `SendInput`/`mouse_event` causes a double freeze per scroll event. Root cause: the injected event re-enters the LL hook chain, and the RIT (Raw Input Thread) blocks synchronously during each traversal. With N hooks on the system, total latency = 2 × N × context_switch_time. Documented in journal as a fundamental architectural limitation of the LL hook framework.
+
 ### Stats
 
-- 35 commits in one session
+- 45+ commits across two sessions
 - 26 unit tests
-- ~2,500 lines of C# across 15 source files
-- Research covered macOS/Linux acceleration algorithms, Win32 hook architecture, 12 window frameworks
+- ~3,000 lines of C# across 17 source files
+- Research covered macOS/Linux acceleration algorithms, Win32 hook architecture, 12 window frameworks, LL hook double-traversal analysis
 - v1.0.0 and v1.1.0 released on GitHub
