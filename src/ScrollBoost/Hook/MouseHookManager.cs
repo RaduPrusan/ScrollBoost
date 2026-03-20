@@ -52,11 +52,14 @@ public class MouseHookManager : IDisposable
             throw new InvalidOperationException(
                 $"Failed to install mouse hook. Error: {Marshal.GetLastWin32Error()}");
 
-        // NOTE: Health check must run on the UI thread (the hook thread) because
-        // SetWindowsHookExW requires the installing thread to pump a message loop.
-        // We store a reference to the dispatcher and use it for reinstallation.
-        _uiDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
-        _healthCheckTimer = new Timer(_ => HealthCheck(), null, 30000, 30000);
+        // Store dispatcher for health check (must reinstall on UI thread)
+        _uiDispatcher ??= System.Windows.Threading.Dispatcher.CurrentDispatcher;
+
+        // Only create the health check timer once — avoid timer leak
+        if (_healthCheckTimer == null)
+        {
+            _healthCheckTimer = new Timer(_ => HealthCheck(), null, 60000, 60000);
+        }
     }
 
     public void Uninstall()

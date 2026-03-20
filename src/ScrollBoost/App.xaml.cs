@@ -3,12 +3,12 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Windows;
-using H.NotifyIcon;
 using Microsoft.Win32;
 using ScrollBoost.Acceleration;
 using ScrollBoost.Hook;
 using ScrollBoost.Profiles;
 using ScrollBoost.UI;
+using WinForms = System.Windows.Forms;
 
 namespace ScrollBoost;
 
@@ -19,7 +19,7 @@ public partial class App : Application
     private const string AutoStartValue = "ScrollBoost";
 
     private Mutex? _mutex;
-    private TaskbarIcon? _trayIcon;
+    private WinForms.NotifyIcon? _trayIcon;
     private MouseHookManager? _hookManager;
     private AppConfig _config = null!;
     private ProfileManager _profileManager = null!;
@@ -74,61 +74,55 @@ public partial class App : Application
 
     private void SetupTrayIcon()
     {
-        _trayIcon = new TaskbarIcon
+        _trayIcon = new WinForms.NotifyIcon
         {
-            ToolTipText = "ScrollBoost",
-            ContextMenu = CreateContextMenu()
+            Text = "ScrollBoost",
+            Icon = System.Drawing.SystemIcons.Application,
+            Visible = true
         };
 
-        // Use system application icon (placeholder — replace with custom icon later)
-        _trayIcon.Icon = System.Drawing.SystemIcons.Application;
+        // Build context menu
+        var menu = new WinForms.ContextMenuStrip();
 
-        _trayIcon.TrayLeftMouseUp += (_, _) => ShowSettings();
-    }
-
-    private System.Windows.Controls.ContextMenu CreateContextMenu()
-    {
-        var menu = new System.Windows.Controls.ContextMenu();
-
-        var enableItem = new System.Windows.Controls.MenuItem
-        {
-            Header = _config.Enabled ? "Disable" : "Enable"
-        };
+        var enableItem = new WinForms.ToolStripMenuItem(_config.Enabled ? "Disable" : "Enable");
         enableItem.Click += (_, _) =>
         {
             _config.Enabled = !_config.Enabled;
             _engine!.Enabled = _config.Enabled;
             _hookManager!.Enabled = _config.Enabled;
-            enableItem.Header = _config.Enabled ? "Disable" : "Enable";
-            _trayIcon!.ToolTipText = _config.Enabled ? "ScrollBoost" : "ScrollBoost (Disabled)";
+            enableItem.Text = _config.Enabled ? "Disable" : "Enable";
+            _trayIcon!.Text = _config.Enabled ? "ScrollBoost" : "ScrollBoost (Disabled)";
             SaveConfig();
         };
         menu.Items.Add(enableItem);
+        menu.Items.Add(new WinForms.ToolStripSeparator());
 
-        menu.Items.Add(new System.Windows.Controls.Separator());
-
-        var configItem = new System.Windows.Controls.MenuItem { Header = "Open Config File" };
+        var configItem = new WinForms.ToolStripMenuItem("Open Config File");
         configItem.Click += (_, _) =>
         {
             System.Diagnostics.Process.Start("explorer.exe", GetConfigPath());
         };
         menu.Items.Add(configItem);
 
-        var aboutItem = new System.Windows.Controls.MenuItem { Header = "About" };
+        var aboutItem = new WinForms.ToolStripMenuItem("About");
         aboutItem.Click += (_, _) =>
         {
             MessageBox.Show("ScrollBoost v0.1.0\nConfigurable scroll acceleration for Windows 11.",
                 "About ScrollBoost", MessageBoxButton.OK, MessageBoxImage.Information);
         };
         menu.Items.Add(aboutItem);
+        menu.Items.Add(new WinForms.ToolStripSeparator());
 
-        menu.Items.Add(new System.Windows.Controls.Separator());
-
-        var exitItem = new System.Windows.Controls.MenuItem { Header = "Exit" };
+        var exitItem = new WinForms.ToolStripMenuItem("Exit");
         exitItem.Click += (_, _) => Shutdown();
         menu.Items.Add(exitItem);
 
-        return menu;
+        _trayIcon.ContextMenuStrip = menu;
+        _trayIcon.MouseClick += (_, args) =>
+        {
+            if (args.Button == WinForms.MouseButtons.Left)
+                ShowSettings();
+        };
     }
 
     private void ShowSettings()
@@ -206,7 +200,11 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _hookManager?.Dispose();
-        _trayIcon?.Dispose();
+        if (_trayIcon != null)
+        {
+            _trayIcon.Visible = false;
+            _trayIcon.Dispose();
+        }
         _mutex?.ReleaseMutex();
         _mutex?.Dispose();
         base.OnExit(e);
