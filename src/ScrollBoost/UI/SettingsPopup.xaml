@@ -1,0 +1,66 @@
+<Window x:Class="ScrollBoost.UI.SettingsPopup"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ScrollBoost Settings"
+        Width="320" Height="380"
+        WindowStyle="ToolWindow"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        Topmost="True"
+        WindowStartupLocation="Manual">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <CheckBox Grid.Row="0" x:Name="EnabledCheck" Content="Enabled"
+                  Margin="0,0,0,12" IsChecked="True"
+                  Checked="EnabledCheck_Changed" Unchecked="EnabledCheck_Changed"/>
+
+        <StackPanel Grid.Row="1" Margin="0,0,0,8">
+            <TextBlock>
+                <Run Text="Scroll Speed: "/><Run x:Name="SpeedLabel" Text="1.5x"/>
+            </TextBlock>
+            <Slider x:Name="SpeedSlider" Minimum="1" Maximum="5"
+                    Value="1.5" TickFrequency="0.1" IsSnapToTickEnabled="True"
+                    ValueChanged="Slider_ValueChanged"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Margin="0,0,0,8">
+            <TextBlock>
+                <Run Text="Acceleration: "/><Run x:Name="AccelLabel" Text="0.4"/>
+            </TextBlock>
+            <Slider x:Name="AccelSlider" Minimum="0" Maximum="1"
+                    Value="0.4" TickFrequency="0.05" IsSnapToTickEnabled="True"
+                    ValueChanged="Slider_ValueChanged"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="3" Margin="0,0,0,8">
+            <TextBlock>
+                <Run Text="Max Speed Cap: "/><Run x:Name="MaxLabel" Text="12x"/>
+            </TextBlock>
+            <Slider x:Name="MaxSlider" Minimum="2" Maximum="30"
+                    Value="12" TickFrequency="1" IsSnapToTickEnabled="True"
+                    ValueChanged="Slider_ValueChanged"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="4" Margin="0,0,0,12">
+            <TextBlock Text="Curve Type" Margin="0,0,0,4"/>
+            <ComboBox x:Name="CurveCombo" SelectedIndex="2"
+                      SelectionChanged="CurveCombo_Changed">
+                <ComboBoxItem Content="Linear"/>
+                <ComboBoxItem Content="Power"/>
+                <ComboBoxItem Content="Sigmoid"/>
+            </ComboBox>
+        </StackPanel>
+
+        <CheckBox Grid.Row="5" x:Name="AutoStartCheck" Content="Start with Windows"
+                  Checked="AutoStartCheck_Changed" Unchecked="AutoStartCheck_Changed"/>
+    </Grid>
+</Window>
