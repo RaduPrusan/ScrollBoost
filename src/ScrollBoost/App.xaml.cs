@@ -88,6 +88,12 @@ public partial class App : Application
         // Build context menu
         var menu = new WinForms.ContextMenuStrip();
 
+        var openItem = new WinForms.ToolStripMenuItem("Open");
+        openItem.Font = new System.Drawing.Font(openItem.Font, System.Drawing.FontStyle.Bold);
+        openItem.Click += (_, _) => ShowSettings();
+        menu.Items.Add(openItem);
+        menu.Items.Add(new WinForms.ToolStripSeparator());
+
         var enableItem = new WinForms.ToolStripMenuItem(_config.Enabled ? "Disable" : "Enable");
         enableItem.Click += (_, _) =>
         {

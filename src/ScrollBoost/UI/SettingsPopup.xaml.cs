@@ -101,6 +101,11 @@ public partial class SettingsPopup : Window
         VersionLabel.Foreground = _secondaryBrush;
         AdvancedDesc.Foreground = _secondaryBrush;
 
+        // Counter card
+        CounterCard.Background = _surfaceBrush;
+        CounterCard.BorderBrush = _borderBrush;
+        CounterLabel.Foreground = _secondaryBrush;
+
         // Advanced panel inputs
         NewClassName.Background = _surfaceBrush;
         NewClassName.Foreground = _textBrush;
