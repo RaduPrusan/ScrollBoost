@@ -30,6 +30,7 @@
                 <RowDefinition Height="42"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- Custom title bar -->
@@ -652,29 +653,121 @@
 
                 </StackPanel>
 
-            <!-- Footer -->
-            <Grid Grid.Row="2" Margin="16,6,16,10">
-                <TextBlock x:Name="VersionLabel"
-                           Text="ScrollBoost v1.1.0"
-                           Foreground="#999999"
-                           FontFamily="Segoe UI Variable Text"
-                           FontSize="11"
-                           VerticalAlignment="Center"
-                           HorizontalAlignment="Left"/>
-                <TextBlock x:Name="AdvancedLink"
-                           Text="Advanced"
-                           Foreground="{DynamicResource AccentBrush}"
-                           FontFamily="Segoe UI Variable Text"
-                           FontSize="11"
-                           HorizontalAlignment="Right"
-                           VerticalAlignment="Center"
-                           Cursor="Hand"
-                           MouseLeftButtonUp="AdvancedLink_Click">
-                    <TextBlock.TextDecorations>
-                        <TextDecoration Location="Underline"/>
-                    </TextBlock.TextDecorations>
-                </TextBlock>
-            </Grid>
+            <!-- Advanced toggle -->
+            <Border Grid.Row="2" Margin="16,4,16,0">
+                <StackPanel>
+                    <TextBlock x:Name="AdvancedToggle"
+                               Cursor="Hand"
+                               FontFamily="Segoe UI Variable Text"
+                               FontSize="12"
+                               Foreground="{DynamicResource AccentBrush}"
+                               MouseLeftButtonUp="AdvancedToggle_Click">
+                        <Run x:Name="AdvancedArrow" Text="&#x25B6; "/>
+                        <Run Text="Window class rules"/>
+                    </TextBlock>
+
+                    <!-- Collapsible advanced panel -->
+                    <StackPanel x:Name="AdvancedPanel" Visibility="Collapsed" Margin="0,8,0,0">
+                        <TextBlock x:Name="AdvancedDesc"
+                                   Text="Control how scroll is delivered per window type. PostMessage is fastest. SendInput works for UWP. Passthrough disables ScrollBoost."
+                                   Foreground="#999999"
+                                   FontFamily="Segoe UI Variable Text"
+                                   FontSize="10"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,8"/>
+
+                        <!-- Rule rows inserted dynamically -->
+                        <StackPanel x:Name="RulesPanel"/>
+
+                        <!-- Add new rule row -->
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="28"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="NewClassName"
+                                     Grid.Column="0"
+                                     FontFamily="Segoe UI Variable Text"
+                                     FontSize="11"
+                                     Padding="4,3"
+                                     Margin="0,0,4,0"
+                                     Background="#2D2D2D"
+                                     Foreground="#FFFFFF"
+                                     BorderBrush="#383838"
+                                     BorderThickness="1">
+                                <TextBox.Style>
+                                    <Style TargetType="TextBox">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="TextBox">
+                                                    <Border Background="{TemplateBinding Background}"
+                                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                                            CornerRadius="4">
+                                                        <ScrollViewer x:Name="PART_ContentHost"
+                                                                      Margin="{TemplateBinding Padding}"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </TextBox.Style>
+                            </TextBox>
+                            <ComboBox x:Name="NewClassMethod"
+                                      Grid.Column="1"
+                                      FontFamily="Segoe UI Variable Text"
+                                      FontSize="11"
+                                      SelectedIndex="0"
+                                      Height="26"
+                                      Margin="0,0,4,0">
+                                <ComboBoxItem Content="PostMessage"/>
+                                <ComboBoxItem Content="SendInput"/>
+                                <ComboBoxItem Content="Passthrough"/>
+                            </ComboBox>
+                            <Button Grid.Column="2"
+                                    Content="+"
+                                    Width="26" Height="26"
+                                    FontSize="14"
+                                    FontWeight="Bold"
+                                    Cursor="Hand"
+                                    Click="AddRule_Click"
+                                    Foreground="{DynamicResource AccentBrush}"
+                                    Background="Transparent"
+                                    BorderThickness="1"
+                                    BorderBrush="#383838">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="{TemplateBinding Background}"
+                                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                                            CornerRadius="4">
+                                                        <ContentPresenter HorizontalAlignment="Center"
+                                                                          VerticalAlignment="Center"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Version label -->
+            <TextBlock Grid.Row="3"
+                       x:Name="VersionLabel"
+                       Text="ScrollBoost v1.1.0"
+                       Foreground="#999999"
+                       FontFamily="Segoe UI Variable Text"
+                       FontSize="11"
+                       HorizontalAlignment="Left"
+                       Margin="16,8,16,10"/>
 
         </Grid>
     </Border>
