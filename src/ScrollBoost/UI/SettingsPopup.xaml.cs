@@ -266,6 +266,15 @@ public partial class SettingsPopup : Window
         PickerTarget.BorderBrush = _borderBrush;
     }
 
+    private void GitHubLink_Click(object sender, MouseButtonEventArgs e)
+    {
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "https://github.com/RaduPrusan/ScrollBoost",
+            UseShellExecute = true
+        });
+    }
+
     private void AdvancedToggle_Click(object sender, MouseButtonEventArgs e)
     {
         _advancedExpanded = !_advancedExpanded;

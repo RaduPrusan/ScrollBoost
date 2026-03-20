@@ -9,27 +9,22 @@ namespace ScrollBoost.UI;
 
 public static class TrayIconHelper
 {
+    // Ochre color for tray icon — visible on both dark and light taskbars
+    private static readonly Color IconColor = Color.FromArgb(255, 0xCC, 0x88, 0x00);
+
     public static Icon CreateIcon()
     {
-        bool isLightTheme = IsLightTheme();
-        Color lineColor = isLightTheme
-            ? Color.FromArgb(255, 0x33, 0x33, 0x33)
-            : Color.White;
-
-        // Render at DPI-appropriate size for crisp tray icons on high-DPI displays
-        int size = GetTrayIconSize();
-        return GenerateMouseIcon(lineColor, size);
+        int size = GetSystemTrayIconSize();
+        return GenerateMouseIcon(IconColor, size);
     }
 
-    private static int GetTrayIconSize()
+    private static int GetSystemTrayIconSize()
     {
         try
         {
-            using var g = Graphics.FromHwnd(IntPtr.Zero);
-            int dpi = (int)g.DpiX;
-            // 96 DPI = 100% = 16px, 120 DPI = 125% = 20px,
-            // 144 DPI = 150% = 24px, 192 DPI = 200% = 32px
-            return Math.Max(16, 16 * dpi / 96);
+            // Use the system metric for small icon size — matches other tray icons
+            int size = GetSystemMetrics(49); // SM_CXSMICON = 49
+            return size > 0 ? size : 32;
         }
         catch
         {
@@ -37,10 +32,13 @@ public static class TrayIconHelper
         }
     }
 
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern int GetSystemMetrics(int nIndex);
+
     public static void SaveMultiSizeIco(string path)
     {
         var sizes = new[] { 16, 32, 48 };
-        var darkColor = Color.FromArgb(255, 0x33, 0x33, 0x33);
+        var darkColor = IconColor;
 
         using var ms = new MemoryStream();
         using var writer = new BinaryWriter(ms);

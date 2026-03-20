@@ -783,15 +783,29 @@
                 </StackPanel>
             </Border>
 
-            <!-- Version label -->
-            <TextBlock Grid.Row="3"
-                       x:Name="VersionLabel"
-                       Text="ScrollBoost v1.1.0"
-                       Foreground="#999999"
-                       FontFamily="Segoe UI Variable Text"
-                       FontSize="11"
-                       HorizontalAlignment="Left"
-                       Margin="16,8,16,10"/>
+            <!-- Footer -->
+            <Grid Grid.Row="3" Margin="16,8,16,10">
+                <TextBlock x:Name="VersionLabel"
+                           Text="ScrollBoost v1.1.0"
+                           Foreground="#999999"
+                           FontFamily="Segoe UI Variable Text"
+                           FontSize="11"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Left"/>
+                <TextBlock x:Name="GitHubLink"
+                           Text="GitHub"
+                           Foreground="{DynamicResource AccentBrush}"
+                           FontFamily="Segoe UI Variable Text"
+                           FontSize="11"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center"
+                           Cursor="Hand"
+                           MouseLeftButtonUp="GitHubLink_Click">
+                    <TextBlock.TextDecorations>
+                        <TextDecoration Location="Underline"/>
+                    </TextBlock.TextDecorations>
+                </TextBlock>
+            </Grid>
 
         </Grid>
     </Border>
