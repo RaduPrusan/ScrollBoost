@@ -31,6 +31,7 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- Custom title bar -->
@@ -783,8 +784,21 @@
                 </StackPanel>
             </Border>
 
+            <!-- Scroll counter -->
+            <TextBlock Grid.Row="3"
+                       x:Name="ScrollCounter"
+                       Foreground="#999999"
+                       FontFamily="Segoe UI Variable Text"
+                       FontSize="11"
+                       HorizontalAlignment="Center"
+                       Margin="16,8,16,0">
+                <Run Text="&#x1F60E; "/>
+                <Run x:Name="ScrollCountText" Text="0"/>
+                <Run Text=" accelerated scrolls"/>
+            </TextBlock>
+
             <!-- Footer -->
-            <Grid Grid.Row="3" Margin="16,8,16,10">
+            <Grid Grid.Row="4" Margin="16,4,16,10">
                 <TextBlock x:Name="VersionLabel"
                            Text="ScrollBoost v1.1.0"
                            Foreground="#999999"

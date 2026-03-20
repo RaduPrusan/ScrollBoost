@@ -39,6 +39,9 @@ public class AppConfig
     [JsonPropertyName("startupMode")]
     public string StartupMode { get; set; } = "none";
 
+    [JsonPropertyName("totalScrollCount")]
+    public long TotalScrollCount { get; set; } = 0;
+
     [JsonPropertyName("windowClassRules")]
     public Dictionary<string, string> WindowClassRules { get; set; } = new()
     {

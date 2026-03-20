@@ -6,6 +6,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Windows.Threading;
+using ScrollBoost.Hook;
 using ScrollBoost.Interop;
 using ScrollBoost.Profiles;
 
@@ -15,6 +17,8 @@ public partial class SettingsPopup : Window
 {
     private readonly AppConfig _config;
     private readonly Action<AppConfig> _onConfigChanged;
+    private readonly MouseHookManager _hookManager;
+    private readonly DispatcherTimer _counterTimer;
     private bool _suppressEvents = true;
     private bool _advancedExpanded;
 
@@ -24,14 +28,26 @@ public partial class SettingsPopup : Window
     private SolidColorBrush _borderBrush = Brushes.DarkGray;
     private SolidColorBrush _surfaceBrush = new(Color.FromRgb(0x2D, 0x2D, 0x2D));
 
-    public SettingsPopup(AppConfig config, Action<AppConfig> onConfigChanged)
+    public SettingsPopup(AppConfig config, Action<AppConfig> onConfigChanged, MouseHookManager hookManager)
     {
         _config = config;
         _onConfigChanged = onConfigChanged;
+        _hookManager = hookManager;
         InitializeComponent();
         ApplyTheme();
         LoadFromConfig();
         RebuildRuleRows();
+        UpdateScrollCounter();
+
+        // Live counter update every second while popup is visible
+        _counterTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _counterTimer.Tick += (_, _) => UpdateScrollCounter();
+        _counterTimer.Start();
+    }
+
+    private void UpdateScrollCounter()
+    {
+        ScrollCountText.Text = _hookManager.ScrollCount.ToString("N0");
     }
 
     private void ApplyTheme()

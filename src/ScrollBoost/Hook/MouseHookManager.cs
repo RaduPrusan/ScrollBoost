@@ -30,11 +30,17 @@ public class MouseHookManager : IDisposable
     private IntPtr _cachedHwnd;
     private ScrollMethod _cachedMethod;
 
+    // Counter: total accelerated scroll events
+    private long _scrollCount;
+
     public bool Enabled
     {
         get => _enabled;
         set => _enabled = value;
     }
+
+    public long ScrollCount => Interlocked.Read(ref _scrollCount);
+    public void SetScrollCount(long value) => Interlocked.Exchange(ref _scrollCount, value);
 
     public MouseHookManager(AccelerationEngine engine)
     {
@@ -198,6 +204,7 @@ public class MouseHookManager : IDisposable
                     (UIntPtr)wp, lp);
             }
 
+            Interlocked.Increment(ref _scrollCount);
             return (IntPtr)1; // Suppress original
         }
 

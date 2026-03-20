@@ -53,6 +53,7 @@ public partial class App : Application
         _hookManager = new MouseHookManager(_engine);
         _hookManager.Enabled = _config.Enabled;
         _hookManager.UpdateClassRules(_config.WindowClassRules);
+        _hookManager.SetScrollCount(_config.TotalScrollCount);
 
         try
         {
@@ -146,7 +147,7 @@ public partial class App : Application
     {
         if (_settingsPopup == null || !_settingsPopup.IsLoaded)
         {
-            _settingsPopup = new SettingsPopup(_config, OnConfigChanged);
+            _settingsPopup = new SettingsPopup(_config, OnConfigChanged, _hookManager!);
         }
 
         _settingsPopup.Show();
@@ -212,6 +213,13 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        // Save scroll counter before shutdown
+        if (_hookManager != null)
+        {
+            _config.TotalScrollCount = _hookManager.ScrollCount;
+            SaveConfig();
+        }
+
         SystemEvents.UserPreferenceChanged -= OnThemeChanged;
         _hotkeyForm?.UnregisterToggleHotkey();
         _hotkeyForm?.Dispose();
