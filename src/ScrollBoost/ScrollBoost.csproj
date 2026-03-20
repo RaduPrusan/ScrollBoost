@@ -6,6 +6,13 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>ScrollBoost</RootNamespace>
     <AssemblyName>ScrollBoost</AssemblyName>
+    <Version>1.1.0</Version>
+    <FileVersion>1.1.0.0</FileVersion>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <Product>ScrollBoost</Product>
+    <Company>Radu Prusan</Company>
+    <Description>Configurable scroll acceleration for Windows 11</Description>
+    <Copyright>Copyright (c) 2026 Radu Prusan</Copyright>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>

@@ -7,7 +7,7 @@ Configurable scroll acceleration for Windows 11. Makes your mouse wheel velocity
 - **Velocity-based acceleration** — scroll speed scales with how fast you flick the wheel
 - **Three curve types** — Sigmoid (smooth, self-capping), Power (progressive), Linear (constant multiplier)
 - **System-wide** — works across all Windows apps including UWP, WinUI, and elevated windows
-- **Zero-lag architecture** — uses `PostMessage` directly to target windows instead of the traditional suppress-and-reinject pattern, eliminating the double hook-chain traversal that causes scroll lag in other tools
+- **Hybrid zero-lag architecture** — uses `PostMessage` for Win32/WPF/WinForms apps (zero hook re-traversal) and `SendInput` for UWP/Chromium/XAML apps (input pipeline). Auto-detects per window.
 - **Windows 11 themed UI** — dark/light mode settings popup with adaptive tray icon
 - **Portable** — single EXE, config file next to it, no installer needed
 - **Global hotkey** — Ctrl+Shift+ScrollLock to toggle on/off
@@ -82,9 +82,12 @@ Settings are stored in `config.json` next to the EXE. Editable by hand or throug
 1. A `WH_MOUSE_LL` hook on a dedicated thread intercepts `WM_MOUSEWHEEL` events
 2. Velocity is computed from inter-event timing using a ring buffer + exponential moving average
 3. The selected acceleration curve maps velocity to a scroll multiplier
-4. The original event is suppressed and a modified `WM_MOUSEWHEEL` is sent directly to the target window via `PostMessage`
+4. The target window class is detected (`GetClassNameW`) and cached:
+   - **Win32/WPF/WinForms/Qt/Firefox/Office** → `PostMessage` (bypasses hook chain, zero lag)
+   - **UWP/Chromium/Electron/XAML Islands** → `SendInput` via `mouse_event` (input pipeline)
+5. The original event is suppressed
 
-Using `PostMessage` instead of `SendInput`/`mouse_event` is the key performance insight — it bypasses the hook chain entirely, eliminating the double-traversal latency that plagues other scroll modification tools.
+The hybrid approach gives zero-lag performance for ~70% of apps while correctly handling UWP, Chrome, Edge, VS Code, and Windows Terminal.
 
 ## Architecture
 
