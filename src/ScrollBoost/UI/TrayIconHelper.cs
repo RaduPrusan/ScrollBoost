@@ -22,8 +22,8 @@ public static class TrayIconHelper
     {
         try
         {
-            // Use the system metric for small icon size — matches other tray icons
-            int size = GetSystemMetrics(49); // SM_CXSMICON = 49
+            // SM_CXICON (11) = large icon size, which is what Win11 tray actually uses
+            int size = GetSystemMetrics(11); // SM_CXICON
             return size > 0 ? size : 32;
         }
         catch
@@ -127,12 +127,11 @@ public static class TrayIconHelper
             LineJoin = LineJoin.Round
         };
 
-        // Mouse body: vertical capsule filling most of the canvas
-        float pad = penWidth;  // minimal padding — just enough for anti-alias
-        float bodyW = size - pad * 2;
-        float bodyH = size - pad * 2;
-        float bodyX = pad;
-        float bodyY = pad;
+        // Mouse body: vertical capsule centered in the canvas
+        float bodyW = size * 0.44f;
+        float bodyH = size * 0.69f;
+        float bodyX = (size - bodyW) / 2f;
+        float bodyY = (size - bodyH) / 2f;
         float radius = bodyW / 2f;    // fully rounded ends
 
         using var path = new GraphicsPath();
