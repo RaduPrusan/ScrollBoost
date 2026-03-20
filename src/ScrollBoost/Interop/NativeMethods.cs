@@ -13,6 +13,27 @@ internal static partial class NativeMethods
     internal const uint INPUT_MOUSE = 0;
     internal const int WHEEL_DELTA = 120;
 
+    internal const int MK_CONTROL = 0x0008;
+    internal const int MK_SHIFT = 0x0004;
+    internal const int MK_LBUTTON = 0x0001;
+    internal const int MK_MBUTTON = 0x0010;
+    internal const int MK_RBUTTON = 0x0002;
+    internal const int MK_XBUTTON1 = 0x0020;
+    internal const int MK_XBUTTON2 = 0x0040;
+    internal const int VK_CONTROL = 0x11;
+    internal const int VK_SHIFT = 0x10;
+    internal const int VK_LBUTTON = 0x01;
+    internal const int VK_MBUTTON = 0x04;
+    internal const int VK_RBUTTON = 0x02;
+    internal const int VK_XBUTTON1 = 0x05;
+    internal const int VK_XBUTTON2 = 0x06;
+
+    internal const uint MOD_CONTROL = 0x0002;
+    internal const uint MOD_SHIFT = 0x0004;
+    internal const uint MOD_NOREPEAT = 0x4000;
+    internal const uint VK_SCROLL = 0x91;
+    internal const int WM_HOTKEY = 0x0312;
+
     internal delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
 
     [StructLayout(LayoutKind.Sequential)]
@@ -149,4 +170,15 @@ internal static partial class NativeMethods
     internal static partial IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);
 
     internal const uint GA_ROOT = 2;
+
+    [LibraryImport("user32.dll")]
+    internal static partial short GetKeyState(int nVirtKey);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool UnregisterHotKey(IntPtr hWnd, int id);
 }

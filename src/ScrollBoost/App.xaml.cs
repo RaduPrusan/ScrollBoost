@@ -25,6 +25,7 @@ public partial class App : Application
     private ProfileManager _profileManager = null!;
     private AccelerationEngine _engine = null!;
     private SettingsPopup? _settingsPopup;
+    private HotkeyForm? _hotkeyForm;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -67,6 +68,7 @@ public partial class App : Application
         }
 
         SetupTrayIcon();
+        SetupGlobalHotkey();
 
         if (_config.StartWithWindows)
             UpdateAutoStart(true);
@@ -77,7 +79,7 @@ public partial class App : Application
         _trayIcon = new WinForms.NotifyIcon
         {
             Text = "ScrollBoost",
-            Icon = System.Drawing.SystemIcons.Application,
+            Icon = TrayIconHelper.CreateIcon(),
             Visible = true
         };
 
@@ -123,6 +125,20 @@ public partial class App : Application
             if (args.Button == WinForms.MouseButtons.Left)
                 ShowSettings();
         };
+    }
+
+    private void SetupGlobalHotkey()
+    {
+        _hotkeyForm = new HotkeyForm();
+        _hotkeyForm.HotkeyPressed += () =>
+        {
+            _config.Enabled = !_config.Enabled;
+            _engine!.Enabled = _config.Enabled;
+            _hookManager!.Enabled = _config.Enabled;
+            _trayIcon!.Text = _config.Enabled ? "ScrollBoost" : "ScrollBoost (Disabled)";
+            SaveConfig();
+        };
+        _hotkeyForm.RegisterToggleHotkey(); // Best effort — may fail if key combo is taken
     }
 
     private void ShowSettings()
@@ -199,6 +215,8 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _hotkeyForm?.UnregisterToggleHotkey();
+        _hotkeyForm?.Dispose();
         _hookManager?.Dispose();
         if (_trayIcon != null)
         {

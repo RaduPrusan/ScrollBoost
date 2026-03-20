@@ -116,10 +116,14 @@ public class MouseHookManager : IDisposable
             {
                 // Walk to the root/top-level window — WM_MOUSEWHEEL is sent to the focus window
                 // but we use the window under the cursor (Windows 10+ behavior)
-                // Build wParam: high word = delta, low word = modifier keys (from original)
-                // The original wParam contains MK_* flags in the low word
-                // We don't have the original wParam directly, so reconstruct with just the delta
-                uint wp = (uint)(((ushort)(short)modifiedDelta) << 16);
+                // Build modifier key flags for low word of wParam
+                uint modifiers = 0;
+                if ((NativeMethods.GetKeyState(NativeMethods.VK_CONTROL) & 0x8000) != 0) modifiers |= (uint)NativeMethods.MK_CONTROL;
+                if ((NativeMethods.GetKeyState(NativeMethods.VK_SHIFT) & 0x8000) != 0) modifiers |= (uint)NativeMethods.MK_SHIFT;
+                if ((NativeMethods.GetKeyState(NativeMethods.VK_LBUTTON) & 0x8000) != 0) modifiers |= (uint)NativeMethods.MK_LBUTTON;
+                if ((NativeMethods.GetKeyState(NativeMethods.VK_MBUTTON) & 0x8000) != 0) modifiers |= (uint)NativeMethods.MK_MBUTTON;
+                if ((NativeMethods.GetKeyState(NativeMethods.VK_RBUTTON) & 0x8000) != 0) modifiers |= (uint)NativeMethods.MK_RBUTTON;
+                uint wp = (uint)(((ushort)(short)modifiedDelta) << 16) | modifiers;
                 // lParam = cursor position in screen coords (MAKELPARAM(x, y))
                 IntPtr lp = (IntPtr)((hookStruct->pt.y << 16) | (hookStruct->pt.x & 0xFFFF));
 
