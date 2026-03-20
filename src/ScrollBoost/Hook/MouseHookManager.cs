@@ -14,14 +14,12 @@ public class MouseHookManager : IDisposable
     private readonly AccelerationEngine _engine;
     private Thread? _hookThread;
     private uint _hookThreadId;
-    private bool _isInjecting;
 
     public bool Enabled { get; set; } = true;
 
     public MouseHookManager(AccelerationEngine engine, ProfileManager profileManager)
     {
         _engine = engine;
-        // Store delegate as field to prevent GC collection
         _hookProc = HookCallback;
     }
 
@@ -55,7 +53,7 @@ public class MouseHookManager : IDisposable
 
                 readyEvent.Set();
 
-                // Lightweight message pump — this is ALL this thread does
+                // Lightweight message pump
                 while (NativeMethods.GetMessageW(out var msg, IntPtr.Zero, 0, 0))
                 {
                     NativeMethods.TranslateMessage(in msg);
@@ -73,7 +71,6 @@ public class MouseHookManager : IDisposable
         _hookThread.Name = "ScrollBoost Hook";
         _hookThread.Start();
 
-        // Wait for hook to be installed
         readyEvent.Wait(5000);
         readyEvent.Dispose();
 
@@ -91,7 +88,6 @@ public class MouseHookManager : IDisposable
 
         if (_hookThread != null && _hookThreadId != 0)
         {
-            // Post WM_QUIT to break the message loop
             NativeMethods.PostThreadMessageW(_hookThreadId, NativeMethods.WM_QUIT, UIntPtr.Zero, IntPtr.Zero);
             _hookThread.Join(2000);
             _hookThread = null;
@@ -101,13 +97,12 @@ public class MouseHookManager : IDisposable
 
     private unsafe IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
-        // Fast path: only intercept vertical scroll
         if (nCode >= 0 && Enabled && wParam == (IntPtr)NativeMethods.WM_MOUSEWHEEL)
         {
             var hookStruct = (NativeMethods.MSLLHOOKSTRUCT*)lParam;
 
-            // Skip self-injected events
-            if (_isInjecting || (hookStruct->flags & NativeMethods.LLMHF_INJECTED) != 0)
+            // Skip injected events (from other tools) — we don't reinject via mouse_event anymore
+            if ((hookStruct->flags & NativeMethods.LLMHF_INJECTED) != 0)
             {
                 return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
             }
@@ -115,12 +110,24 @@ public class MouseHookManager : IDisposable
             int delta = (short)(hookStruct->mouseData >> 16);
             int modifiedDelta = _engine.ProcessScroll(delta, (long)hookStruct->time);
 
-            // Inject and suppress
-            _isInjecting = true;
-            NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_WHEEL, 0, 0, modifiedDelta, UIntPtr.Zero);
-            _isInjecting = false;
+            // Send WM_MOUSEWHEEL directly to the target window — bypasses hook chain entirely
+            IntPtr targetHwnd = NativeMethods.WindowFromPoint(hookStruct->pt);
+            if (targetHwnd != IntPtr.Zero)
+            {
+                // Walk to the root/top-level window — WM_MOUSEWHEEL is sent to the focus window
+                // but we use the window under the cursor (Windows 10+ behavior)
+                // Build wParam: high word = delta, low word = modifier keys (from original)
+                // The original wParam contains MK_* flags in the low word
+                // We don't have the original wParam directly, so reconstruct with just the delta
+                uint wp = (uint)(((ushort)(short)modifiedDelta) << 16);
+                // lParam = cursor position in screen coords (MAKELPARAM(x, y))
+                IntPtr lp = (IntPtr)((hookStruct->pt.y << 16) | (hookStruct->pt.x & 0xFFFF));
 
-            return (IntPtr)1;
+                NativeMethods.PostMessageW(targetHwnd, NativeMethods.WM_MOUSEWHEEL,
+                    (UIntPtr)wp, lp);
+            }
+
+            return (IntPtr)1; // Suppress original
         }
 
         return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);

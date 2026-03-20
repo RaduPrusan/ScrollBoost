@@ -130,4 +130,23 @@ internal static partial class NativeMethods
 
     [LibraryImport("kernel32.dll")]
     internal static partial uint GetCurrentThreadId();
+
+    // Direct message posting to target window (bypasses hook chain)
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool PostMessageW(IntPtr hWnd, uint Msg, UIntPtr wParam, IntPtr lParam);
+
+    [LibraryImport("user32.dll")]
+    internal static partial IntPtr GetFocus();
+
+    [LibraryImport("user32.dll")]
+    internal static partial IntPtr GetForegroundWindow();
+
+    [LibraryImport("user32.dll")]
+    internal static partial uint GetWindowThreadProcessId(IntPtr hWnd, IntPtr processId);
+
+    [LibraryImport("user32.dll")]
+    internal static partial IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);
+
+    internal const uint GA_ROOT = 2;
 }
