@@ -35,8 +35,22 @@ public class AppConfig
     [JsonPropertyName("enabled")]
     public bool Enabled { get; set; } = true;
 
-    [JsonPropertyName("startWithWindows")]
-    public bool StartWithWindows { get; set; } = false;
+    [JsonPropertyName("startupMode")]
+    public string StartupMode { get; set; } = "none";
+
+    /// <summary>
+    /// Backward-compatibility shim for code still referencing the old bool property.
+    /// Maps true → "registry", false → "none". Will be removed when UI is updated.
+    /// </summary>
+    [JsonIgnore]
+    public bool StartWithWindows
+    {
+        get => StartupMode == "registry" || StartupMode == "scheduler";
+        set => StartupMode = value ? "registry" : "none";
+    }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? ExtensionData { get; set; }
 
     public static AppConfig CreateDefault() => new();
 
@@ -46,7 +60,17 @@ public class AppConfig
     {
         try
         {
-            return JsonSerializer.Deserialize<AppConfig>(json, JsonOptions) ?? CreateDefault();
+            var config = JsonSerializer.Deserialize<AppConfig>(json, JsonOptions) ?? CreateDefault();
+
+            // Migrate old startWithWindows: true → startupMode: "registry"
+            if (config.ExtensionData != null &&
+                config.ExtensionData.TryGetValue("startWithWindows", out var legacyValue) &&
+                legacyValue.ValueKind == JsonValueKind.True)
+            {
+                config.StartupMode = "registry";
+            }
+
+            return config;
         }
         catch (JsonException)
         {

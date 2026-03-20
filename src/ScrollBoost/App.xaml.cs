@@ -3,7 +3,6 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Windows;
-using Microsoft.Win32;
 using ScrollBoost.Acceleration;
 using ScrollBoost.Hook;
 using ScrollBoost.Profiles;
@@ -15,8 +14,6 @@ namespace ScrollBoost;
 public partial class App : Application
 {
     private const string MutexName = "Global\\ScrollBoost";
-    private const string AutoStartKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string AutoStartValue = "ScrollBoost";
 
     private Mutex? _mutex;
     private WinForms.NotifyIcon? _trayIcon;
@@ -70,8 +67,9 @@ public partial class App : Application
         SetupTrayIcon();
         SetupGlobalHotkey();
 
-        if (_config.StartWithWindows)
-            UpdateAutoStart(true);
+        // Self-heal startup on launch (updates path if exe moved)
+        if (_config.StartupMode != "none")
+            AutoStartManager.Apply(_config.StartupMode);
     }
 
     private void SetupTrayIcon()
@@ -164,7 +162,7 @@ public partial class App : Application
         _hookManager!.Enabled = config.Enabled;
         var curve = BuildCurveFromProfile(config.DefaultProfile);
         _engine.SetCurve(curve);
-        UpdateAutoStart(config.StartWithWindows);
+        AutoStartManager.Apply(config.StartupMode);
         SaveConfig();
     }
 
@@ -191,26 +189,6 @@ public partial class App : Application
                 steepness: 0.1 + profile.Acceleration * 0.4),
             _ => new SigmoidCurve(profile.BaseMultiplier, profile.MaxMultiplier, 15.0, 0.3)
         };
-    }
-
-    private void UpdateAutoStart(bool enabled)
-    {
-        try
-        {
-            using var key = Registry.CurrentUser.OpenSubKey(AutoStartKey, writable: true);
-            if (key == null) return;
-
-            if (enabled)
-            {
-                string exePath = Environment.ProcessPath ?? "";
-                key.SetValue(AutoStartValue, $"\"{exePath}\"");
-            }
-            else
-            {
-                key.DeleteValue(AutoStartValue, throwOnMissingValue: false);
-            }
-        }
-        catch { /* best effort */ }
     }
 
     protected override void OnExit(ExitEventArgs e)

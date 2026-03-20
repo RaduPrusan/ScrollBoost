@@ -13,7 +13,7 @@ public class AppConfigTests
         Assert.Equal(0.4, config.DefaultProfile.Acceleration);
         Assert.Equal(12.0, config.DefaultProfile.MaxMultiplier);
         Assert.True(config.Enabled);
-        Assert.False(config.StartWithWindows);
+        Assert.Equal("none", config.StartupMode);
     }
 
     [Fact]
@@ -51,5 +51,21 @@ public class AppConfigTests
     {
         var config = AppConfig.FromJson("not valid json {{{");
         Assert.Equal(1.5, config.DefaultProfile.BaseMultiplier);
+    }
+
+    [Fact]
+    public void FromJson_LegacyStartWithWindowsTrue_MapsToRegistry()
+    {
+        string json = """{"configVersion": 1, "startWithWindows": true}""";
+        var config = AppConfig.FromJson(json);
+        Assert.Equal("registry", config.StartupMode);
+    }
+
+    [Fact]
+    public void FromJson_LegacyStartWithWindowsFalse_RemainsNone()
+    {
+        string json = """{"configVersion": 1, "startWithWindows": false}""";
+        var config = AppConfig.FromJson(json);
+        Assert.Equal("none", config.StartupMode);
     }
 }

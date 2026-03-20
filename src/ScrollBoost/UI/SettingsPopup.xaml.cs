@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using ScrollBoost.Profiles;
 
 namespace ScrollBoost.UI;
@@ -28,7 +29,6 @@ public partial class SettingsPopup : Window
         bool isLight = TrayIconHelper.IsLightTheme();
 
         Color bgColor        = isLight ? Color.FromRgb(0xF3, 0xF3, 0xF3) : Color.FromRgb(0x20, 0x20, 0x20);
-        Color surfaceColor   = isLight ? Color.FromRgb(0xFF, 0xFF, 0xFF) : Color.FromRgb(0x2D, 0x2D, 0x2D);
         Color textColor      = isLight ? Color.FromRgb(0x1A, 0x1A, 0x1A) : Color.FromRgb(0xFF, 0xFF, 0xFF);
         Color secondaryColor = isLight ? Color.FromRgb(0x66, 0x66, 0x66) : Color.FromRgb(0x99, 0x99, 0x99);
         Color accentColor    = isLight ? Color.FromRgb(0x00, 0x5F, 0xB8) : Color.FromRgb(0x60, 0xCD, 0xFF);
@@ -54,19 +54,36 @@ public partial class SettingsPopup : Window
         TitleText.Foreground   = textBrush;
         CloseButton.Foreground = secondaryBrush;
 
-        // Labels
-        EnabledLabel.Foreground   = textBrush;
-        SpeedName.Foreground      = textBrush;
-        AccelName.Foreground      = textBrush;
-        MaxName.Foreground        = textBrush;
-        SpeedLabel.Foreground     = accentBrush;
-        AccelLabel.Foreground     = accentBrush;
-        MaxLabel.Foreground       = accentBrush;
-        CurveLabel.Foreground     = textBrush;
-        AutoStartLabel.Foreground = textBrush;
+        // Primary labels
+        EnabledLabel.Foreground = textBrush;
+        SpeedName.Foreground    = textBrush;
+        AccelName.Foreground    = textBrush;
+        MaxName.Foreground      = textBrush;
+        CurveLabel.Foreground   = textBrush;
+
+        // Value labels (accent)
+        SpeedLabel.Foreground = accentBrush;
+        AccelLabel.Foreground = accentBrush;
+        MaxLabel.Foreground   = accentBrush;
+
+        // Description text (secondary)
+        EnabledDesc.Foreground          = secondaryBrush;
+        SpeedDesc.Foreground            = secondaryBrush;
+        AccelDesc.Foreground            = secondaryBrush;
+        MaxDesc.Foreground              = secondaryBrush;
+        CurveDesc.Foreground            = secondaryBrush;
+        StartupHeader.Foreground        = secondaryBrush;
+        StartupRegistryDesc.Foreground  = secondaryBrush;
+        StartupSchedulerDesc.Foreground = secondaryBrush;
+
+        // Startup divider line
+        StartupDivider.Fill = borderBrush;
 
         // ComboBox
-        CurveCombo.Foreground  = textBrush;
+        CurveCombo.Foreground = textBrush;
+
+        // Version label
+        VersionLabel.Foreground = secondaryBrush;
     }
 
     private void LoadFromConfig()
@@ -78,12 +95,17 @@ public partial class SettingsPopup : Window
         MaxSlider.Value = _config.DefaultProfile.MaxMultiplier;
         CurveCombo.SelectedIndex = _config.DefaultProfile.CurveType?.ToLowerInvariant() switch
         {
-            "linear" => 0,
-            "power" => 1,
+            "linear"  => 0,
+            "power"   => 1,
             "sigmoid" => 2,
-            _ => 2
+            _         => 2
         };
-        AutoStartCheck.IsChecked = _config.StartWithWindows;
+        switch (_config.StartupMode?.ToLowerInvariant())
+        {
+            case "registry":  StartupRegistry.IsChecked  = true; break;
+            case "scheduler": StartupScheduler.IsChecked = true; break;
+            default:          StartupNone.IsChecked       = true; break;
+        }
         UpdateLabels();
         _suppressEvents = false;
     }
@@ -92,15 +114,15 @@ public partial class SettingsPopup : Window
     {
         SpeedLabel.Text = $"{SpeedSlider.Value:F1}x";
         AccelLabel.Text = $"{AccelSlider.Value:F2}";
-        MaxLabel.Text = $"{MaxSlider.Value:F0}x";
+        MaxLabel.Text   = $"{MaxSlider.Value:F0}x";
     }
 
     private void SaveToConfig()
     {
         _config.Enabled = EnabledCheck.IsChecked == true;
         _config.DefaultProfile.BaseMultiplier = SpeedSlider.Value;
-        _config.DefaultProfile.Acceleration = AccelSlider.Value;
-        _config.DefaultProfile.MaxMultiplier = MaxSlider.Value;
+        _config.DefaultProfile.Acceleration   = AccelSlider.Value;
+        _config.DefaultProfile.MaxMultiplier  = MaxSlider.Value;
         _config.DefaultProfile.CurveType = CurveCombo.SelectedIndex switch
         {
             0 => "linear",
@@ -108,7 +130,13 @@ public partial class SettingsPopup : Window
             2 => "sigmoid",
             _ => "sigmoid"
         };
-        _config.StartWithWindows = AutoStartCheck.IsChecked == true;
+        if (StartupScheduler.IsChecked == true)
+            _config.StartupMode = "scheduler";
+        else if (StartupRegistry.IsChecked == true)
+            _config.StartupMode = "registry";
+        else
+            _config.StartupMode = "none";
+
         _onConfigChanged(_config);
     }
 
@@ -139,7 +167,7 @@ public partial class SettingsPopup : Window
         SaveToConfig();
     }
 
-    private void AutoStartCheck_Changed(object sender, RoutedEventArgs e)
+    private void Startup_Changed(object sender, RoutedEventArgs e)
     {
         if (_suppressEvents) return;
         SaveToConfig();
