@@ -95,4 +95,39 @@ internal static partial class NativeMethods
         int dy,
         int dwData,
         UIntPtr dwExtraInfo);
+
+    // Message pump for dedicated hook thread
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MSG
+    {
+        internal IntPtr hwnd;
+        internal uint message;
+        internal UIntPtr wParam;
+        internal IntPtr lParam;
+        internal uint time;
+        internal POINT pt;
+    }
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool GetMessageW(out MSG lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool TranslateMessage(in MSG lpMsg);
+
+    [LibraryImport("user32.dll")]
+    internal static partial IntPtr DispatchMessageW(in MSG lpMsg);
+
+    [LibraryImport("user32.dll")]
+    internal static partial void PostQuitMessage(int nExitCode);
+
+    internal const uint WM_QUIT = 0x0012;
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool PostThreadMessageW(uint idThread, uint Msg, UIntPtr wParam, IntPtr lParam);
+
+    [LibraryImport("kernel32.dll")]
+    internal static partial uint GetCurrentThreadId();
 }
