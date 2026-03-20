@@ -85,8 +85,10 @@ public partial class App : Application
             Visible = true
         };
 
-        // Build context menu
+        // Build context menu with theme-aware renderer
+        bool isDark = !TrayIconHelper.IsLightTheme();
         var menu = new WinForms.ContextMenuStrip();
+        menu.Renderer = new ThemedMenuRenderer(isDark);
 
         var openItem = new WinForms.ToolStripMenuItem("Open");
         openItem.Font = new System.Drawing.Font(openItem.Font, System.Drawing.FontStyle.Bold);
@@ -183,9 +185,13 @@ public partial class App : Application
     {
         if (e.Category == UserPreferenceCategory.General)
         {
-            // Theme may have changed — update tray icon
+            // Theme may have changed — update tray icon and menu
             if (_trayIcon != null)
+            {
                 _trayIcon.Icon = TrayIconHelper.CreateIcon();
+                if (_trayIcon.ContextMenuStrip != null)
+                    _trayIcon.ContextMenuStrip.Renderer = new ThemedMenuRenderer(!TrayIconHelper.IsLightTheme());
+            }
 
             // Force settings popup to be recreated with new theme on next open
             _settingsPopup = null;
