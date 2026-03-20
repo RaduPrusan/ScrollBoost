@@ -15,7 +15,7 @@ Configurable scroll acceleration for Windows 11. Makes your mouse wheel velocity
 
 ## Screenshot
 
-Left-click the system tray icon to open the settings popup:
+<img src="docs/snapshot.png" alt="ScrollBoost settings" width="280"/>
 
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
