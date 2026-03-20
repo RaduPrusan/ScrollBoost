@@ -146,11 +146,13 @@ public partial class App : Application
             _settingsPopup = new SettingsPopup(_config, OnConfigChanged);
         }
 
-        var workArea = SystemParameters.WorkArea;
-        _settingsPopup.Left = workArea.Right - _settingsPopup.Width - 10;
-        _settingsPopup.Top = workArea.Bottom - _settingsPopup.Height - 10;
-
         _settingsPopup.Show();
+
+        // Position after Show() so WPF has measured the auto-sized height
+        var workArea = SystemParameters.WorkArea;
+        _settingsPopup.Left = workArea.Right - _settingsPopup.ActualWidth - 10;
+        _settingsPopup.Top = workArea.Bottom - _settingsPopup.ActualHeight - 10;
+
         _settingsPopup.Activate();
     }
 
