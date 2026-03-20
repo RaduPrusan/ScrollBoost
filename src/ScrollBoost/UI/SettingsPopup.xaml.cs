@@ -10,13 +10,13 @@ public partial class SettingsPopup : Window
 {
     private readonly AppConfig _config;
     private readonly Action<AppConfig> _onConfigChanged;
-    private bool _suppressEvents;
+    private bool _suppressEvents = true; // Prevent events during InitializeComponent
 
     public SettingsPopup(AppConfig config, Action<AppConfig> onConfigChanged)
     {
-        InitializeComponent();
         _config = config;
         _onConfigChanged = onConfigChanged;
+        InitializeComponent(); // XAML triggers events — _suppressEvents blocks them
         LoadFromConfig();
     }
 
