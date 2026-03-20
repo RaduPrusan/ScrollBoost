@@ -80,24 +80,8 @@ public partial class App : Application
             ContextMenu = CreateContextMenu()
         };
 
-        // Load icon — try embedded resource first, fall back to system icon
-        try
-        {
-            var iconPath = Path.Combine(AppContext.BaseDirectory, "Resources", "app.ico");
-            if (File.Exists(iconPath))
-            {
-                _trayIcon.Icon = new System.Drawing.Icon(iconPath);
-            }
-            else
-            {
-                // Use a built-in system icon as fallback
-                _trayIcon.Icon = System.Drawing.SystemIcons.Application;
-            }
-        }
-        catch
-        {
-            _trayIcon.Icon = System.Drawing.SystemIcons.Application;
-        }
+        // Use system application icon (placeholder — replace with custom icon later)
+        _trayIcon.Icon = System.Drawing.SystemIcons.Application;
 
         _trayIcon.TrayLeftMouseUp += (_, _) => ShowSettings();
     }

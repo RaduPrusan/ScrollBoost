@@ -86,4 +86,13 @@ internal static partial class NativeMethods
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool GetCursorPos(out POINT lpPoint);
+
+    // Legacy but simpler API — avoids INPUT struct layout issues
+    [LibraryImport("user32.dll")]
+    internal static partial void mouse_event(
+        uint dwFlags,
+        int dx,
+        int dy,
+        int dwData,
+        UIntPtr dwExtraInfo);
 }

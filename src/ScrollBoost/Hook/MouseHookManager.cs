@@ -106,20 +106,11 @@ public class MouseHookManager : IDisposable
 
     private void InjectScroll(int delta)
     {
-        var input = new NativeMethods.INPUT
-        {
-            type = NativeMethods.INPUT_MOUSE,
-            mi = new NativeMethods.MOUSEINPUT
-            {
-                mouseData = delta,
-                dwFlags = NativeMethods.MOUSEEVENTF_WHEEL,
-            }
-        };
-
         _isInjecting = true;
         try
         {
-            NativeMethods.SendInput(1, [input], Marshal.SizeOf<NativeMethods.INPUT>());
+            // Use mouse_event (legacy but reliable) — avoids INPUT struct layout issues on x64
+            NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_WHEEL, 0, 0, delta, UIntPtr.Zero);
         }
         finally
         {
