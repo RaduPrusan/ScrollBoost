@@ -127,9 +127,9 @@ public static class TrayIconHelper
             LineJoin = LineJoin.Round
         };
 
-        // Mouse body: vertical capsule centered in the canvas
-        float bodyW = size * 0.44f;
-        float bodyH = size * 0.69f;
+        // Mouse body: vertical capsule filling ~90% of canvas height
+        float bodyW = size * 0.56f;
+        float bodyH = size * 0.90f;
         float bodyX = (size - bodyW) / 2f;
         float bodyY = (size - bodyH) / 2f;
         float radius = bodyW / 2f;    // fully rounded ends
