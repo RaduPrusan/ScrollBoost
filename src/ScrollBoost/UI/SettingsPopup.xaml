@@ -679,19 +679,41 @@
                         <!-- Rule rows inserted dynamically -->
                         <StackPanel x:Name="RulesPanel"/>
 
-                        <!-- Add new rule row -->
+                        <!-- Add new rule -->
                         <Grid Margin="0,6,0,0">
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="26"/>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="90"/>
                                 <ColumnDefinition Width="28"/>
                             </Grid.ColumnDefinitions>
+
+                            <!-- Window picker target -->
+                            <Border Grid.Column="0"
+                                    x:Name="PickerTarget"
+                                    Width="24" Height="24"
+                                    Background="Transparent"
+                                    BorderBrush="#383838"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Cursor="Cross"
+                                    ToolTip="Drag over a window to capture its class"
+                                    MouseLeftButtonDown="Picker_MouseDown"
+                                    MouseMove="Picker_MouseMove"
+                                    MouseLeftButtonUp="Picker_MouseUp">
+                                <TextBlock Text="&#x25CE;"
+                                           FontSize="14"
+                                           Foreground="{DynamicResource AccentBrush}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+
                             <TextBox x:Name="NewClassName"
-                                     Grid.Column="0"
+                                     Grid.Column="1"
                                      FontFamily="Segoe UI Variable Text"
                                      FontSize="11"
                                      Padding="4,3"
-                                     Margin="0,0,4,0"
+                                     Margin="4,0,4,0"
                                      Background="#2D2D2D"
                                      Foreground="#FFFFFF"
                                      BorderBrush="#383838"
@@ -714,8 +736,9 @@
                                     </Style>
                                 </TextBox.Style>
                             </TextBox>
+
                             <ComboBox x:Name="NewClassMethod"
-                                      Grid.Column="1"
+                                      Grid.Column="2"
                                       FontFamily="Segoe UI Variable Text"
                                       FontSize="11"
                                       SelectedIndex="0"
@@ -725,7 +748,8 @@
                                 <ComboBoxItem Content="SendInput"/>
                                 <ComboBoxItem Content="Passthrough"/>
                             </ComboBox>
-                            <Button Grid.Column="2"
+
+                            <Button Grid.Column="3"
                                     Content="+"
                                     Width="26" Height="26"
                                     FontSize="14"

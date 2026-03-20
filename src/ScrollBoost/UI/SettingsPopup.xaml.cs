@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using ScrollBoost.Interop;
 using ScrollBoost.Profiles;
 
 namespace ScrollBoost.UI;
@@ -225,6 +226,44 @@ public partial class SettingsPopup : Window
         AddRuleRow(className, method);
         NewClassName.Text = "";
         _onConfigChanged(_config);
+    }
+
+    // --- Window class picker (drag crosshair over any window) ---
+
+    private bool _picking;
+
+    private void Picker_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        _picking = true;
+        Mouse.Capture(PickerTarget);
+        PickerTarget.BorderBrush = (SolidColorBrush)Resources["AccentBrush"];
+    }
+
+    private void Picker_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_picking) return;
+
+        NativeMethods.GetCursorPos(out var pt);
+        IntPtr hwnd = NativeMethods.WindowFromPoint(pt);
+        if (hwnd == IntPtr.Zero) return;
+
+        // Skip our own window
+        var thisHandle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        if (hwnd == thisHandle) return;
+
+        var buf = new char[256];
+        int len = NativeMethods.GetClassNameW(hwnd, buf, buf.Length);
+        if (len > 0)
+        {
+            NewClassName.Text = new string(buf, 0, len);
+        }
+    }
+
+    private void Picker_MouseUp(object sender, MouseButtonEventArgs e)
+    {
+        _picking = false;
+        Mouse.Capture(null);
+        PickerTarget.BorderBrush = _borderBrush;
     }
 
     private void AdvancedToggle_Click(object sender, MouseButtonEventArgs e)

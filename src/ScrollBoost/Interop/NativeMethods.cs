@@ -120,6 +120,10 @@ internal static partial class NativeMethods
     [LibraryImport("user32.dll")]
     internal static partial short GetKeyState(int nVirtKey);
 
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool GetCursorPos(out POINT lpPoint);
+
     // Window class detection for hybrid scroll injection
     [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
     internal static partial int GetClassNameW(IntPtr hWnd, [Out] char[] lpClassName, int nMaxCount);
