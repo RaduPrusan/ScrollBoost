@@ -278,8 +278,16 @@ public partial class SettingsPopup : Window
     private void AdvancedToggle_Click(object sender, MouseButtonEventArgs e)
     {
         _advancedExpanded = !_advancedExpanded;
+        double bottomEdge = Top + ActualHeight;
+
         AdvancedPanel.Visibility = _advancedExpanded ? Visibility.Visible : Visibility.Collapsed;
         AdvancedArrow.Text = _advancedExpanded ? "\u25BC " : "\u25B6 ";
+
+        // After layout updates, keep the bottom edge pinned
+        Dispatcher.InvokeAsync(() =>
+        {
+            Top = bottomEdge - ActualHeight;
+        }, System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
     private void UpdateLabels()
