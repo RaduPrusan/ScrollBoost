@@ -97,20 +97,14 @@ ScrollBoost.exe
 │   └── Curves                  Sigmoid, Power, Linear
 ├── Profiles/
 │   ├── AppConfig               JSON config load/save
-│   └── ProfileManager          Per-app profile lookup (v2)
+│   └── ProfileManager          Per-app profile lookup
+│   └── AutoStartManager        Registry Run key + Task Scheduler
 ├── Interop/NativeMethods       Win32 P/Invoke declarations
 └── UI/
     ├── SettingsPopup            WPF popup with dark/light theming
-    ├── TrayIconHelper           Runtime icon generation matching system theme
+    ├── TrayIconHelper           DPI-aware icon generation matching system theme
     └── HotkeyForm              Global hotkey handler (Ctrl+Shift+ScrollLock)
 ```
-
-## Roadmap
-
-- [ ] Per-application scroll profiles (engine ready, UI pending)
-- [ ] Horizontal scroll acceleration
-- [ ] Smooth scrolling animation (pixel interpolation)
-- [ ] Custom icon design
 
 ## License
 

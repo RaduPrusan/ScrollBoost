@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Windows;
+using Microsoft.Win32;
 using ScrollBoost.Acceleration;
 using ScrollBoost.Hook;
 using ScrollBoost.Profiles;
@@ -65,6 +66,7 @@ public partial class App : Application
         }
 
         SetupTrayIcon();
+        SystemEvents.UserPreferenceChanged += OnThemeChanged;
         SetupGlobalHotkey();
 
         // Self-heal startup on launch (updates path if exe moved)
@@ -107,7 +109,7 @@ public partial class App : Application
         var aboutItem = new WinForms.ToolStripMenuItem("About");
         aboutItem.Click += (_, _) =>
         {
-            MessageBox.Show("ScrollBoost v0.1.0\nConfigurable scroll acceleration for Windows 11.",
+            MessageBox.Show("ScrollBoost v1.0.0\nConfigurable scroll acceleration for Windows 11.",
                 "About ScrollBoost", MessageBoxButton.OK, MessageBoxImage.Information);
         };
         menu.Items.Add(aboutItem);
@@ -168,6 +170,19 @@ public partial class App : Application
         SaveConfig();
     }
 
+    private void OnThemeChanged(object sender, UserPreferenceChangedEventArgs e)
+    {
+        if (e.Category == UserPreferenceCategory.General)
+        {
+            // Theme may have changed — update tray icon
+            if (_trayIcon != null)
+                _trayIcon.Icon = TrayIconHelper.CreateIcon();
+
+            // Force settings popup to be recreated with new theme on next open
+            _settingsPopup = null;
+        }
+    }
+
     private void SaveConfig()
     {
         try { _config.Save(GetConfigPath()); } catch { /* best effort */ }
@@ -195,6 +210,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        SystemEvents.UserPreferenceChanged -= OnThemeChanged;
         _hotkeyForm?.UnregisterToggleHotkey();
         _hotkeyForm?.Dispose();
         _hookManager?.Dispose();

@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -9,11 +10,14 @@ namespace ScrollBoost.Hook;
 
 public class MouseHookManager : IDisposable
 {
+    private const uint WM_APP_REHOOK = 0x8001; // WM_APP + 1
+
     private IntPtr _hookHandle = IntPtr.Zero;
     private readonly NativeMethods.LowLevelMouseProc _hookProc;
     private readonly AccelerationEngine _engine;
     private Thread? _hookThread;
     private uint _hookThreadId;
+    private System.Threading.Timer? _healthTimer;
 
     public bool Enabled { get; set; } = true;
 
@@ -56,6 +60,17 @@ public class MouseHookManager : IDisposable
                 // Lightweight message pump
                 while (NativeMethods.GetMessageW(out var msg, IntPtr.Zero, 0, 0))
                 {
+                    if (msg.message == WM_APP_REHOOK)
+                    {
+                        // Reinstall hook on this thread (safe — we're on the hook thread)
+                        if (_hookHandle != IntPtr.Zero)
+                            NativeMethods.UnhookWindowsHookEx(_hookHandle);
+
+                        IntPtr hMod = NativeMethods.GetModuleHandleW(null);
+                        _hookHandle = NativeMethods.SetWindowsHookExW(
+                            NativeMethods.WH_MOUSE_LL, _hookProc, hMod, 0);
+                        continue;
+                    }
                     NativeMethods.TranslateMessage(in msg);
                     NativeMethods.DispatchMessageW(in msg);
                 }
@@ -76,10 +91,20 @@ public class MouseHookManager : IDisposable
 
         if (threadError != null)
             throw threadError;
+
+        // Health check: periodically ask the hook thread to verify and reinstall the hook
+        _healthTimer = new System.Threading.Timer(_ =>
+        {
+            if (_hookThreadId != 0)
+                NativeMethods.PostThreadMessageW(_hookThreadId, WM_APP_REHOOK, UIntPtr.Zero, IntPtr.Zero);
+        }, null, 60000, 60000);
     }
 
     public void Uninstall()
     {
+        _healthTimer?.Dispose();
+        _healthTimer = null;
+
         if (_hookHandle != IntPtr.Zero)
         {
             NativeMethods.UnhookWindowsHookEx(_hookHandle);

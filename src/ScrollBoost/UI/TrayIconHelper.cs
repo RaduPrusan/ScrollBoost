@@ -15,7 +15,26 @@ public static class TrayIconHelper
         Color lineColor = isLightTheme
             ? Color.FromArgb(255, 0x33, 0x33, 0x33)
             : Color.White;
-        return GenerateMouseIcon(lineColor, 32);
+
+        // Render at DPI-appropriate size for crisp tray icons on high-DPI displays
+        int size = GetTrayIconSize();
+        return GenerateMouseIcon(lineColor, size);
+    }
+
+    private static int GetTrayIconSize()
+    {
+        try
+        {
+            using var g = Graphics.FromHwnd(IntPtr.Zero);
+            int dpi = (int)g.DpiX;
+            // 96 DPI = 100% = 16px, 120 DPI = 125% = 20px,
+            // 144 DPI = 150% = 24px, 192 DPI = 200% = 32px
+            return Math.Max(16, 16 * dpi / 96);
+        }
+        catch
+        {
+            return 32;
+        }
     }
 
     public static void SaveMultiSizeIco(string path)
