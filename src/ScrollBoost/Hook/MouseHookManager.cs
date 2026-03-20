@@ -14,7 +14,6 @@ public class MouseHookManager : IDisposable
     private readonly AccelerationEngine _engine;
     private Thread? _hookThread;
     private uint _hookThreadId;
-    private bool _isInjecting;
 
     public bool Enabled { get; set; } = true;
 
@@ -102,8 +101,8 @@ public class MouseHookManager : IDisposable
         {
             var hookStruct = (NativeMethods.MSLLHOOKSTRUCT*)lParam;
 
-            // Skip injected events — either our own fallback mouse_event or from other tools
-            if (_isInjecting || (hookStruct->flags & NativeMethods.LLMHF_INJECTED) != 0)
+            // Skip injected events from other tools
+            if ((hookStruct->flags & NativeMethods.LLMHF_INJECTED) != 0)
             {
                 return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
             }
@@ -128,17 +127,8 @@ public class MouseHookManager : IDisposable
                 // lParam = cursor position in screen coords (MAKELPARAM(x, y))
                 IntPtr lp = (IntPtr)((hookStruct->pt.y << 16) | (hookStruct->pt.x & 0xFFFF));
 
-                bool sent = NativeMethods.PostMessageW(targetHwnd, NativeMethods.WM_MOUSEWHEEL,
+                NativeMethods.PostMessageW(targetHwnd, NativeMethods.WM_MOUSEWHEEL,
                     (UIntPtr)wp, lp);
-
-                if (!sent)
-                {
-                    // PostMessage failed — likely UIPI (target is elevated).
-                    // Fall back to mouse_event which works across integrity levels.
-                    _isInjecting = true;
-                    NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_WHEEL, 0, 0, modifiedDelta, UIntPtr.Zero);
-                    _isInjecting = false;
-                }
             }
 
             return (IntPtr)1; // Suppress original
