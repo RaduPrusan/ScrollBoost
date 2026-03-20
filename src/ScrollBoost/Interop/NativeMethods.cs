@@ -120,6 +120,21 @@ internal static partial class NativeMethods
     [LibraryImport("user32.dll")]
     internal static partial short GetKeyState(int nVirtKey);
 
+    // Window class detection for hybrid scroll injection
+    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    internal static partial int GetClassNameW(IntPtr hWnd, [Out] char[] lpClassName, int nMaxCount);
+
+    // Input pipeline injection for UWP/Chromium/XAML apps
+    internal const uint MOUSEEVENTF_WHEEL = 0x0800;
+
+    [LibraryImport("user32.dll")]
+    internal static partial void mouse_event(
+        uint dwFlags,
+        int dx,
+        int dy,
+        int dwData,
+        UIntPtr dwExtraInfo);
+
     [LibraryImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);

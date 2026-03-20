@@ -9,7 +9,16 @@ namespace ScrollBoost.Hook;
 
 public class MouseHookManager : IDisposable
 {
-    private const uint WM_APP_REHOOK = 0x8001; // WM_APP + 1
+    private const uint WM_APP_REHOOK = 0x8001;
+
+    // Window classes that require SendInput (don't process PostMessage'd WM_MOUSEWHEEL)
+    private static readonly string[] SendInputClasses =
+    [
+        "ApplicationFrameWindow",           // UWP host (Settings, Calculator, Store)
+        "Windows.UI.Core.CoreWindow",       // UWP content
+        "Chrome_WidgetWin_1",               // Chromium (Chrome, Edge, VS Code, Electron)
+        "CASCADIA_HOSTING_WINDOW_CLASS",     // Windows Terminal (XAML Islands)
+    ];
 
     private IntPtr _hookHandle = IntPtr.Zero;
     private readonly NativeMethods.LowLevelMouseProc _hookProc;
@@ -18,6 +27,11 @@ public class MouseHookManager : IDisposable
     private uint _hookThreadId;
     private Timer? _healthTimer;
     private volatile bool _enabled = true;
+    private volatile bool _isInjecting;
+
+    // Cache: avoid calling GetClassNameW on every scroll event for the same window
+    private IntPtr _lastClassHwnd;
+    private bool _lastClassNeedsSendInput;
 
     public bool Enabled
     {
@@ -61,12 +75,10 @@ public class MouseHookManager : IDisposable
 
                 readyEvent.Set();
 
-                // Lightweight message pump
                 while (NativeMethods.GetMessageW(out var msg, IntPtr.Zero, 0, 0))
                 {
                     if (msg.message == WM_APP_REHOOK)
                     {
-                        // Reinstall hook on this thread (safe — we're on the hook thread)
                         if (_hookHandle != IntPtr.Zero)
                             NativeMethods.UnhookWindowsHookEx(_hookHandle);
 
@@ -79,7 +91,6 @@ public class MouseHookManager : IDisposable
                     NativeMethods.DispatchMessageW(in msg);
                 }
 
-                // Message loop exited (WM_QUIT received) — clean up hook on this thread
                 if (_hookHandle != IntPtr.Zero)
                 {
                     NativeMethods.UnhookWindowsHookEx(_hookHandle);
@@ -103,7 +114,6 @@ public class MouseHookManager : IDisposable
         if (threadError != null)
             throw threadError;
 
-        // Health check: periodically ask the hook thread to reinstall
         _healthTimer = new Timer(_ =>
         {
             if (_hookThreadId != 0)
@@ -113,7 +123,6 @@ public class MouseHookManager : IDisposable
 
     public void Uninstall()
     {
-        // Stop health timer first and wait for any in-flight callback
         if (_healthTimer != null)
         {
             var timerDone = new ManualResetEventSlim(false);
@@ -123,7 +132,6 @@ public class MouseHookManager : IDisposable
             _healthTimer = null;
         }
 
-        // Post WM_QUIT — the hook thread will unhook and exit cleanly
         if (_hookThread != null && _hookThreadId != 0)
         {
             NativeMethods.PostThreadMessageW(_hookThreadId, NativeMethods.WM_QUIT, UIntPtr.Zero, IntPtr.Zero);
@@ -139,8 +147,8 @@ public class MouseHookManager : IDisposable
         {
             var hookStruct = (NativeMethods.MSLLHOOKSTRUCT*)lParam;
 
-            // Skip injected events from other tools
-            if ((hookStruct->flags & NativeMethods.LLMHF_INJECTED) != 0)
+            // Skip our own injected events (SendInput path) and events from other tools
+            if (_isInjecting || (hookStruct->flags & NativeMethods.LLMHF_INJECTED) != 0)
             {
                 return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
             }
@@ -151,25 +159,69 @@ public class MouseHookManager : IDisposable
             IntPtr targetHwnd = NativeMethods.WindowFromPoint(hookStruct->pt);
             if (targetHwnd != IntPtr.Zero)
             {
-                uint modifiers = 0;
-                if ((NativeMethods.GetKeyState(NativeMethods.VK_CONTROL) & 0x8000) != 0) modifiers |= (uint)NativeMethods.MK_CONTROL;
-                if ((NativeMethods.GetKeyState(NativeMethods.VK_SHIFT) & 0x8000) != 0) modifiers |= (uint)NativeMethods.MK_SHIFT;
-                if ((NativeMethods.GetKeyState(NativeMethods.VK_LBUTTON) & 0x8000) != 0) modifiers |= (uint)NativeMethods.MK_LBUTTON;
-                if ((NativeMethods.GetKeyState(NativeMethods.VK_MBUTTON) & 0x8000) != 0) modifiers |= (uint)NativeMethods.MK_MBUTTON;
-                if ((NativeMethods.GetKeyState(NativeMethods.VK_RBUTTON) & 0x8000) != 0) modifiers |= (uint)NativeMethods.MK_RBUTTON;
-                uint wp = (uint)(((ushort)(short)modifiedDelta) << 16) | modifiers;
+                if (NeedsSendInput(targetHwnd))
+                {
+                    // UWP, Chromium, XAML Islands — inject via input pipeline
+                    _isInjecting = true;
+                    NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_WHEEL,
+                        0, 0, modifiedDelta, UIntPtr.Zero);
+                    _isInjecting = false;
+                }
+                else
+                {
+                    // Win32, WPF, WinForms, Qt, Firefox, Office — fast PostMessage path
+                    uint modifiers = GetModifierKeys();
+                    uint wp = (uint)(((ushort)(short)modifiedDelta) << 16) | modifiers;
+                    IntPtr lp = (IntPtr)((int)((ushort)(short)hookStruct->pt.y << 16)
+                        | (ushort)(short)hookStruct->pt.x);
 
-                // MAKELPARAM: pack two signed 16-bit values (safe for negative multi-monitor coords)
-                IntPtr lp = (IntPtr)((int)((ushort)(short)hookStruct->pt.y << 16) | (ushort)(short)hookStruct->pt.x);
-
-                NativeMethods.PostMessageW(targetHwnd, NativeMethods.WM_MOUSEWHEEL,
-                    (UIntPtr)wp, lp);
+                    NativeMethods.PostMessageW(targetHwnd, NativeMethods.WM_MOUSEWHEEL,
+                        (UIntPtr)wp, lp);
+                }
             }
 
             return (IntPtr)1;
         }
 
         return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
+    }
+
+    private bool NeedsSendInput(IntPtr hwnd)
+    {
+        // Cache: same window as last check? Skip GetClassNameW
+        if (hwnd == _lastClassHwnd)
+            return _lastClassNeedsSendInput;
+
+        _lastClassHwnd = hwnd;
+        _lastClassNeedsSendInput = false;
+
+        var buf = new char[256];
+        int len = NativeMethods.GetClassNameW(hwnd, buf, buf.Length);
+        if (len > 0)
+        {
+            var className = new string(buf, 0, len);
+            for (int i = 0; i < SendInputClasses.Length; i++)
+            {
+                if (className.Equals(SendInputClasses[i], StringComparison.OrdinalIgnoreCase))
+                {
+                    _lastClassNeedsSendInput = true;
+                    break;
+                }
+            }
+        }
+
+        return _lastClassNeedsSendInput;
+    }
+
+    private static uint GetModifierKeys()
+    {
+        uint m = 0;
+        if ((NativeMethods.GetKeyState(NativeMethods.VK_CONTROL) & 0x8000) != 0) m |= (uint)NativeMethods.MK_CONTROL;
+        if ((NativeMethods.GetKeyState(NativeMethods.VK_SHIFT) & 0x8000) != 0) m |= (uint)NativeMethods.MK_SHIFT;
+        if ((NativeMethods.GetKeyState(NativeMethods.VK_LBUTTON) & 0x8000) != 0) m |= (uint)NativeMethods.MK_LBUTTON;
+        if ((NativeMethods.GetKeyState(NativeMethods.VK_MBUTTON) & 0x8000) != 0) m |= (uint)NativeMethods.MK_MBUTTON;
+        if ((NativeMethods.GetKeyState(NativeMethods.VK_RBUTTON) & 0x8000) != 0) m |= (uint)NativeMethods.MK_RBUTTON;
+        return m;
     }
 
     public void Dispose()

@@ -655,7 +655,7 @@
             <!-- Version label -->
             <TextBlock Grid.Row="2"
                        x:Name="VersionLabel"
-                       Text="ScrollBoost v1.0.0"
+                       Text="ScrollBoost v1.1.0"
                        Foreground="#999999"
                        FontFamily="Segoe UI Variable Text"
                        FontSize="11"

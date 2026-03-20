@@ -109,7 +109,7 @@ public partial class App : Application
         var aboutItem = new WinForms.ToolStripMenuItem("About");
         aboutItem.Click += (_, _) =>
         {
-            MessageBox.Show("ScrollBoost v1.0.0\nConfigurable scroll acceleration for Windows 11.",
+            MessageBox.Show("ScrollBoost v1.1.0\nConfigurable scroll acceleration for Windows 11.",
                 "About ScrollBoost", MessageBoxButton.OK, MessageBoxImage.Information);
         };
         menu.Items.Add(aboutItem);
