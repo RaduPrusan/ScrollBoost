@@ -652,15 +652,29 @@
 
                 </StackPanel>
 
-            <!-- Version label -->
-            <TextBlock Grid.Row="2"
-                       x:Name="VersionLabel"
-                       Text="ScrollBoost v1.1.0"
-                       Foreground="#999999"
-                       FontFamily="Segoe UI Variable Text"
-                       FontSize="11"
-                       HorizontalAlignment="Left"
-                       Margin="16,6,16,10"/>
+            <!-- Footer -->
+            <Grid Grid.Row="2" Margin="16,6,16,10">
+                <TextBlock x:Name="VersionLabel"
+                           Text="ScrollBoost v1.1.0"
+                           Foreground="#999999"
+                           FontFamily="Segoe UI Variable Text"
+                           FontSize="11"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Left"/>
+                <TextBlock x:Name="AdvancedLink"
+                           Text="Advanced"
+                           Foreground="{DynamicResource AccentBrush}"
+                           FontFamily="Segoe UI Variable Text"
+                           FontSize="11"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center"
+                           Cursor="Hand"
+                           MouseLeftButtonUp="AdvancedLink_Click">
+                    <TextBlock.TextDecorations>
+                        <TextDecoration Location="Underline"/>
+                    </TextBlock.TextDecorations>
+                </TextBlock>
+            </Grid>
 
         </Grid>
     </Border>

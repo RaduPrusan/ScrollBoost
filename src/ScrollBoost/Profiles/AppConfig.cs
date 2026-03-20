@@ -39,6 +39,13 @@ public class AppConfig
     [JsonPropertyName("startupMode")]
     public string StartupMode { get; set; } = "none";
 
+    [JsonPropertyName("windowClassRules")]
+    public Dictionary<string, string> WindowClassRules { get; set; } = new()
+    {
+        ["ApplicationFrameWindow"] = "sendinput",
+        ["Windows.UI.Core.CoreWindow"] = "sendinput"
+    };
+
     /// <summary>
     /// Backward-compatibility shim for code still referencing the old bool property.
     /// Maps true → "registry", false → "none". Will be removed when UI is updated.

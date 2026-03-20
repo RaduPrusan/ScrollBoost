@@ -68,14 +68,22 @@ Settings are stored in `config.json` next to the EXE. Editable by hand or throug
   "smoothingAlpha": 0.3,
   "velocityWindowSize": 4,
   "enabled": true,
-  "startupMode": "none"
+  "startupMode": "none",
+  "windowClassRules": {
+    "ApplicationFrameWindow": "sendinput",
+    "Windows.UI.Core.CoreWindow": "sendinput"
+  }
 }
 ```
 
-**Advanced settings** (config.json only):
+**Advanced settings** (config.json only — click "Advanced" in the settings popup):
 - `gestureTimeoutMs` — time between scroll events before velocity resets (default 250ms)
 - `smoothingAlpha` — EMA smoothing factor for velocity detection (0.0–1.0, default 0.3)
 - `velocityWindowSize` — number of events in the velocity ring buffer (default 4)
+- `windowClassRules` — per-window-class scroll delivery method:
+  - `"postmessage"` — fast, zero-lag (default for unlisted classes)
+  - `"sendinput"` — input pipeline, works with UWP/WinUI (has latency from hook chain re-traversal)
+  - `"passthrough"` — don't modify scroll for this window class
 
 ## How It Works
 

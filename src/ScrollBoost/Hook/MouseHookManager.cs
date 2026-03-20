@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using ScrollBoost.Acceleration;
@@ -7,18 +8,11 @@ using ScrollBoost.Interop;
 
 namespace ScrollBoost.Hook;
 
+public enum ScrollMethod { PostMessage, SendInput, Passthrough }
+
 public class MouseHookManager : IDisposable
 {
     private const uint WM_APP_REHOOK = 0x8001;
-
-    // Window classes that require SendInput (don't process PostMessage'd WM_MOUSEWHEEL)
-    private static readonly string[] SendInputClasses =
-    [
-        "ApplicationFrameWindow",           // UWP host (Settings, Calculator, Store)
-        "Windows.UI.Core.CoreWindow",       // UWP content
-        "Chrome_WidgetWin_1",               // Chromium (Chrome, Edge, VS Code, Electron)
-        "CASCADIA_HOSTING_WINDOW_CLASS",     // Windows Terminal (XAML Islands)
-    ];
 
     private IntPtr _hookHandle = IntPtr.Zero;
     private readonly NativeMethods.LowLevelMouseProc _hookProc;
@@ -29,9 +23,12 @@ public class MouseHookManager : IDisposable
     private volatile bool _enabled = true;
     private volatile bool _isInjecting;
 
-    // Cache: avoid calling GetClassNameW on every scroll event for the same window
-    private IntPtr _lastClassHwnd;
-    private bool _lastClassNeedsSendInput;
+    // Window class → scroll method rules (case-insensitive)
+    private volatile Dictionary<string, ScrollMethod> _classRules = new(StringComparer.OrdinalIgnoreCase);
+
+    // Cache: avoid GetClassNameW on every scroll for the same window
+    private IntPtr _cachedHwnd;
+    private ScrollMethod _cachedMethod;
 
     public bool Enabled
     {
@@ -43,6 +40,23 @@ public class MouseHookManager : IDisposable
     {
         _engine = engine;
         _hookProc = HookCallback;
+    }
+
+    public void UpdateClassRules(Dictionary<string, string> rules)
+    {
+        var parsed = new Dictionary<string, ScrollMethod>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (className, mode) in rules)
+        {
+            parsed[className] = mode?.ToLowerInvariant() switch
+            {
+                "sendinput" => ScrollMethod.SendInput,
+                "passthrough" => ScrollMethod.Passthrough,
+                _ => ScrollMethod.PostMessage
+            };
+        }
+        _classRules = parsed;
+        // Invalidate cache
+        _cachedHwnd = IntPtr.Zero;
     }
 
     public void Install()
@@ -147,70 +161,68 @@ public class MouseHookManager : IDisposable
         {
             var hookStruct = (NativeMethods.MSLLHOOKSTRUCT*)lParam;
 
-            // Skip our own injected events (SendInput path) and events from other tools
+            // Skip our own injected events (SendInput path)
             if (_isInjecting || (hookStruct->flags & NativeMethods.LLMHF_INJECTED) != 0)
             {
                 return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
             }
 
+            IntPtr targetHwnd = NativeMethods.WindowFromPoint(hookStruct->pt);
+            if (targetHwnd == IntPtr.Zero)
+                return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
+
+            ScrollMethod method = ResolveMethod(targetHwnd);
+
+            // Passthrough: don't touch this window's scroll at all
+            if (method == ScrollMethod.Passthrough)
+                return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
+
             int delta = (short)(hookStruct->mouseData >> 16);
             int modifiedDelta = _engine.ProcessScroll(delta, (long)hookStruct->time);
 
-            IntPtr targetHwnd = NativeMethods.WindowFromPoint(hookStruct->pt);
-            if (targetHwnd != IntPtr.Zero)
+            if (method == ScrollMethod.SendInput)
             {
-                if (NeedsSendInput(targetHwnd))
-                {
-                    // UWP, Chromium, XAML Islands — inject via input pipeline
-                    _isInjecting = true;
-                    NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_WHEEL,
-                        0, 0, modifiedDelta, UIntPtr.Zero);
-                    _isInjecting = false;
-                }
-                else
-                {
-                    // Win32, WPF, WinForms, Qt, Firefox, Office — fast PostMessage path
-                    uint modifiers = GetModifierKeys();
-                    uint wp = (uint)(((ushort)(short)modifiedDelta) << 16) | modifiers;
-                    IntPtr lp = (IntPtr)((int)((ushort)(short)hookStruct->pt.y << 16)
-                        | (ushort)(short)hookStruct->pt.x);
+                _isInjecting = true;
+                NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_WHEEL,
+                    0, 0, modifiedDelta, UIntPtr.Zero);
+                _isInjecting = false;
+            }
+            else // PostMessage
+            {
+                uint modifiers = GetModifierKeys();
+                uint wp = (uint)(((ushort)(short)modifiedDelta) << 16) | modifiers;
+                IntPtr lp = (IntPtr)((int)((ushort)(short)hookStruct->pt.y << 16)
+                    | (ushort)(short)hookStruct->pt.x);
 
-                    NativeMethods.PostMessageW(targetHwnd, NativeMethods.WM_MOUSEWHEEL,
-                        (UIntPtr)wp, lp);
-                }
+                NativeMethods.PostMessageW(targetHwnd, NativeMethods.WM_MOUSEWHEEL,
+                    (UIntPtr)wp, lp);
             }
 
-            return (IntPtr)1;
+            return (IntPtr)1; // Suppress original
         }
 
         return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
     }
 
-    private bool NeedsSendInput(IntPtr hwnd)
+    private ScrollMethod ResolveMethod(IntPtr hwnd)
     {
-        // Cache: same window as last check? Skip GetClassNameW
-        if (hwnd == _lastClassHwnd)
-            return _lastClassNeedsSendInput;
+        if (hwnd == _cachedHwnd)
+            return _cachedMethod;
 
-        _lastClassHwnd = hwnd;
-        _lastClassNeedsSendInput = false;
+        _cachedHwnd = hwnd;
+        _cachedMethod = ScrollMethod.PostMessage; // default
 
         var buf = new char[256];
         int len = NativeMethods.GetClassNameW(hwnd, buf, buf.Length);
         if (len > 0)
         {
             var className = new string(buf, 0, len);
-            for (int i = 0; i < SendInputClasses.Length; i++)
-            {
-                if (className.Equals(SendInputClasses[i], StringComparison.OrdinalIgnoreCase))
-                {
-                    _lastClassNeedsSendInput = true;
-                    break;
-                }
-            }
+            var rules = _classRules;
+            if (rules.TryGetValue(className, out var method))
+                _cachedMethod = method;
         }
 
-        return _lastClassNeedsSendInput;
+        return _cachedMethod;
     }
 
     private static uint GetModifierKeys()

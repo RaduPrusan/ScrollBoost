@@ -52,6 +52,7 @@ public partial class App : Application
 
         _hookManager = new MouseHookManager(_engine);
         _hookManager.Enabled = _config.Enabled;
+        _hookManager.UpdateClassRules(_config.WindowClassRules);
 
         try
         {
@@ -164,6 +165,7 @@ public partial class App : Application
         _profileManager.UpdateConfig(config);
         _engine.Enabled = config.Enabled;
         _hookManager!.Enabled = config.Enabled;
+        _hookManager.UpdateClassRules(config.WindowClassRules);
         var curve = BuildCurveFromProfile(config.DefaultProfile);
         _engine.SetCurve(curve);
         AutoStartManager.Apply(config.StartupMode);

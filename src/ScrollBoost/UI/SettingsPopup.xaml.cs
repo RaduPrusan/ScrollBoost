@@ -148,6 +148,12 @@ public partial class SettingsPopup : Window
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Hide();
 
+    private void AdvancedLink_Click(object sender, MouseButtonEventArgs e)
+    {
+        string configPath = System.IO.Path.Combine(AppContext.BaseDirectory, "config.json");
+        System.Diagnostics.Process.Start("notepad.exe", configPath);
+    }
+
     private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         if (_suppressEvents) return;
