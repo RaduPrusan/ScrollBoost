@@ -30,8 +30,9 @@ public class MouseHookManager : IDisposable
     private IntPtr _cachedHwnd;
     private ScrollMethod _cachedMethod;
 
-    // Counter: total accelerated scroll events
+    // Counter: total accelerated scroll operations (gestures, not ticks)
     private long _scrollCount;
+    private long _lastScrollTime;
 
     public bool Enabled
     {
@@ -204,7 +205,12 @@ public class MouseHookManager : IDisposable
                     (UIntPtr)wp, lp);
             }
 
-            Interlocked.Increment(ref _scrollCount);
+            // Count scroll operations (new gesture if 250ms+ gap)
+            long now = (long)hookStruct->time;
+            long prev = Interlocked.Exchange(ref _lastScrollTime, now);
+            if (now - prev > 250)
+                Interlocked.Increment(ref _scrollCount);
+
             return (IntPtr)1; // Suppress original
         }
 
