@@ -7,11 +7,15 @@ Configurable scroll acceleration for Windows 11. Makes your mouse wheel velocity
 - **Velocity-based acceleration** — scroll speed scales with how fast you flick the wheel
 - **Three curve types** — Sigmoid (smooth, self-capping), Power (progressive), Linear (constant multiplier)
 - **System-wide** — works across all Windows apps including UWP, WinUI, and elevated windows
-- **Hybrid zero-lag architecture** — uses `PostMessage` for Win32/WPF/WinForms apps (zero hook re-traversal) and `SendInput` for UWP/Chromium/XAML apps (input pipeline). Auto-detects per window.
-- **Windows 11 themed UI** — dark/light mode settings popup with adaptive tray icon
+- **Hybrid zero-lag architecture** — uses `PostMessage` for Win32/WPF/WinForms apps (zero hook re-traversal) and `SendInput` for UWP/Chromium/XAML apps. Auto-detects per window, fully configurable.
+- **Per-window-class rules** — choose PostMessage (fast), SendInput (compatible), or Passthrough (disable) per window type. Drag the crosshair picker over any window to capture its class name.
+- **Windows 11 themed UI** — dark/light mode settings popup with ochre adaptive tray icon
+- **Dual autostart** — Registry Run key (standard) or Task Scheduler (elevated, no UAC prompt)
 - **Portable** — single EXE, config file next to it, no installer needed
 - **Global hotkey** — Ctrl+Shift+ScrollLock to toggle on/off
 - **Ctrl+Scroll zoom** — modifier keys are preserved, so Ctrl+Scroll zoom works in browsers/editors
+- **Hook health check** — automatically recovers if Windows silently removes the hook
+- **Runtime theme detection** — tray icon and settings adapt when you switch dark/light mode
 
 ## Screenshot
 
@@ -28,8 +32,9 @@ Configurable scroll acceleration for Windows 11. Makes your mouse wheel velocity
 
 1. Download `ScrollBoost.exe` from [Releases](https://github.com/RaduPrusan/ScrollBoost/releases)
 2. Place it anywhere (Desktop, a tools folder, etc.)
-3. Run it — UAC will prompt for admin rights (needed to intercept scroll in elevated windows)
-4. A mouse icon appears in the system tray
+3. Run it — UAC will prompt for admin rights (needed for scroll in elevated windows)
+4. An ochre mouse icon appears in the system tray
+5. Left-click the tray icon to open settings, right-click for quick menu
 
 No .NET runtime needed — the EXE is fully self-contained.
 
@@ -41,7 +46,7 @@ Requires [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0).
 # Build
 dotnet build src/ScrollBoost -c Release
 
-# Run tests
+# Run tests (26 tests)
 dotnet test
 
 # Publish single-file EXE
@@ -52,7 +57,7 @@ The published EXE is at `src/ScrollBoost/bin/Release/net9.0-windows/win-x64/publ
 
 ## Configuration
 
-Settings are stored in `config.json` next to the EXE. Editable by hand or through the tray popup.
+Settings are stored in `config.json` next to the EXE. Editable through the tray popup or by hand.
 
 ```json
 {
@@ -76,45 +81,63 @@ Settings are stored in `config.json` next to the EXE. Editable by hand or throug
 }
 ```
 
-**Advanced settings** (config.json only — click "Advanced" in the settings popup):
+### Window Class Rules
+
+Control how scroll is delivered per window type. Expand **"Window class rules"** in the settings popup to manage rules in-app.
+
+| Method | Speed | Use for |
+|--------|-------|---------|
+| `postmessage` | Zero lag | Default — Win32, WPF, WinForms, Firefox, Office, Qt |
+| `sendinput` | Some lag | UWP/WinUI apps that ignore PostMessage |
+| `passthrough` | Native | Games or apps where ScrollBoost should not intervene |
+
+Drag the **crosshair picker** (◎) over any window to auto-detect its class name, then choose a method and click +.
+
+### Advanced Settings (config.json only)
+
 - `gestureTimeoutMs` — time between scroll events before velocity resets (default 250ms)
 - `smoothingAlpha` — EMA smoothing factor for velocity detection (0.0–1.0, default 0.3)
 - `velocityWindowSize` — number of events in the velocity ring buffer (default 4)
-- `windowClassRules` — per-window-class scroll delivery method:
-  - `"postmessage"` — fast, zero-lag (default for unlisted classes)
-  - `"sendinput"` — input pipeline, works with UWP/WinUI (has latency from hook chain re-traversal)
-  - `"passthrough"` — don't modify scroll for this window class
+
+### Startup Modes
+
+| Mode | Description |
+|------|-------------|
+| Off | Manual launch only |
+| Start with Windows | Registry Run key — no UAC, but scroll may not work in elevated apps |
+| Start elevated | Task Scheduler — runs as admin with full app coverage, no UAC prompt |
 
 ## How It Works
 
-1. A `WH_MOUSE_LL` hook on a dedicated thread intercepts `WM_MOUSEWHEEL` events
+1. A `WH_MOUSE_LL` hook on a **dedicated thread** intercepts `WM_MOUSEWHEEL` events
 2. Velocity is computed from inter-event timing using a ring buffer + exponential moving average
 3. The selected acceleration curve maps velocity to a scroll multiplier
 4. The target window class is detected (`GetClassNameW`) and cached:
-   - **Win32/WPF/WinForms/Qt/Firefox/Office** → `PostMessage` (bypasses hook chain, zero lag)
-   - **UWP/Chromium/Electron/XAML Islands** → `SendInput` via `mouse_event` (input pipeline)
-5. The original event is suppressed
+   - **Unlisted classes** → `PostMessage` (bypasses hook chain, zero lag)
+   - **Configured as `sendinput`** → `mouse_event` (input pipeline, for UWP)
+   - **Configured as `passthrough`** → original event passes through unmodified
+5. The original event is suppressed (except passthrough)
 
-The hybrid approach gives zero-lag performance for ~70% of apps while correctly handling UWP, Chrome, Edge, VS Code, and Windows Terminal.
+The hybrid approach gives zero-lag performance for most apps while correctly handling UWP and other frameworks that don't process posted `WM_MOUSEWHEEL`.
 
 ## Architecture
 
 ```
 ScrollBoost.exe
-├── Hook/MouseHookManager      WH_MOUSE_LL on dedicated thread
+├── Hook/MouseHookManager      WH_MOUSE_LL on dedicated thread, hybrid injection
 ├── Acceleration/
 │   ├── VelocityTracker         Ring buffer + EMA velocity detection
 │   ├── AccelerationEngine      Composes velocity + curve → modified delta
-│   └── Curves                  Sigmoid, Power, Linear
+│   └── Curves                  Sigmoid, Power, Linear (IAccelerationCurve)
 ├── Profiles/
-│   ├── AppConfig               JSON config load/save
-│   └── ProfileManager          Per-app profile lookup
+│   ├── AppConfig               JSON config load/save with migration
+│   ├── ProfileManager          Per-app profile lookup
 │   └── AutoStartManager        Registry Run key + Task Scheduler
-├── Interop/NativeMethods       Win32 P/Invoke declarations
+├── Interop/NativeMethods       Win32 P/Invoke (LibraryImport)
 └── UI/
-    ├── SettingsPopup            WPF popup with dark/light theming
-    ├── TrayIconHelper           DPI-aware icon generation matching system theme
-    └── HotkeyForm              Global hotkey handler (Ctrl+Shift+ScrollLock)
+    ├── SettingsPopup            WPF dark/light themed popup with window class rules
+    ├── TrayIconHelper           DPI-aware ochre icon generation
+    └── HotkeyForm              Global hotkey (Ctrl+Shift+ScrollLock)
 ```
 
 ## License
