@@ -11,6 +11,11 @@
         Topmost="True"
         WindowStartupLocation="Manual">
 
+    <Window.Resources>
+        <SolidColorBrush x:Key="AccentBrush" Color="#60CDFF"/>
+        <SolidColorBrush x:Key="TrackBrush" Color="#404040"/>
+    </Window.Resources>
+
     <Border x:Name="RootBorder"
             Background="#202020"
             BorderBrush="#383838"
@@ -149,7 +154,7 @@
                                                                     <Setter.Value>
                                                                         <ControlTemplate TargetType="RepeatButton">
                                                                             <Border x:Name="TrackFill"
-                                                                                    Background="#60CDFF"
+                                                                                    Background="{DynamicResource AccentBrush}"
                                                                                     Height="4"
                                                                                     CornerRadius="2"/>
                                                                         </ControlTemplate>
@@ -168,7 +173,7 @@
                                                                         <ControlTemplate TargetType="Thumb">
                                                                             <Ellipse x:Name="ThumbEllipse"
                                                                                      Width="16" Height="16"
-                                                                                     Fill="#60CDFF"/>
+                                                                                     Fill="{DynamicResource AccentBrush}"/>
                                                                             <ControlTemplate.Triggers>
                                                                                 <Trigger Property="IsMouseOver" Value="True">
                                                                                     <Setter TargetName="ThumbEllipse" Property="Fill" Value="#FFFFFF"/>
@@ -189,7 +194,7 @@
                                                                     <Setter.Value>
                                                                         <ControlTemplate TargetType="RepeatButton">
                                                                             <Border x:Name="TrackEmpty"
-                                                                                    Background="#404040"
+                                                                                    Background="{DynamicResource TrackBrush}"
                                                                                     Height="4"
                                                                                     CornerRadius="2"/>
                                                                         </ControlTemplate>
@@ -246,7 +251,7 @@
                                                                 <Setter Property="Template">
                                                                     <Setter.Value>
                                                                         <ControlTemplate TargetType="RepeatButton">
-                                                                            <Border Background="#60CDFF" Height="4" CornerRadius="2"/>
+                                                                            <Border Background="{DynamicResource AccentBrush}" Height="4" CornerRadius="2"/>
                                                                         </ControlTemplate>
                                                                     </Setter.Value>
                                                                 </Setter>
@@ -261,7 +266,7 @@
                                                                 <Setter Property="Template">
                                                                     <Setter.Value>
                                                                         <ControlTemplate TargetType="Thumb">
-                                                                            <Ellipse x:Name="ThumbEllipse" Width="16" Height="16" Fill="#60CDFF"/>
+                                                                            <Ellipse x:Name="ThumbEllipse" Width="16" Height="16" Fill="{DynamicResource AccentBrush}"/>
                                                                             <ControlTemplate.Triggers>
                                                                                 <Trigger Property="IsMouseOver" Value="True">
                                                                                     <Setter TargetName="ThumbEllipse" Property="Fill" Value="#FFFFFF"/>
@@ -281,7 +286,7 @@
                                                                 <Setter Property="Template">
                                                                     <Setter.Value>
                                                                         <ControlTemplate TargetType="RepeatButton">
-                                                                            <Border Background="#404040" Height="4" CornerRadius="2"/>
+                                                                            <Border Background="{DynamicResource TrackBrush}" Height="4" CornerRadius="2"/>
                                                                         </ControlTemplate>
                                                                     </Setter.Value>
                                                                 </Setter>
@@ -336,7 +341,7 @@
                                                                 <Setter Property="Template">
                                                                     <Setter.Value>
                                                                         <ControlTemplate TargetType="RepeatButton">
-                                                                            <Border Background="#60CDFF" Height="4" CornerRadius="2"/>
+                                                                            <Border Background="{DynamicResource AccentBrush}" Height="4" CornerRadius="2"/>
                                                                         </ControlTemplate>
                                                                     </Setter.Value>
                                                                 </Setter>
@@ -351,7 +356,7 @@
                                                                 <Setter Property="Template">
                                                                     <Setter.Value>
                                                                         <ControlTemplate TargetType="Thumb">
-                                                                            <Ellipse x:Name="ThumbEllipse" Width="16" Height="16" Fill="#60CDFF"/>
+                                                                            <Ellipse x:Name="ThumbEllipse" Width="16" Height="16" Fill="{DynamicResource AccentBrush}"/>
                                                                             <ControlTemplate.Triggers>
                                                                                 <Trigger Property="IsMouseOver" Value="True">
                                                                                     <Setter TargetName="ThumbEllipse" Property="Fill" Value="#FFFFFF"/>
@@ -371,7 +376,7 @@
                                                                 <Setter Property="Template">
                                                                     <Setter.Value>
                                                                         <ControlTemplate TargetType="RepeatButton">
-                                                                            <Border Background="#404040" Height="4" CornerRadius="2"/>
+                                                                            <Border Background="{DynamicResource TrackBrush}" Height="4" CornerRadius="2"/>
                                                                         </ControlTemplate>
                                                                     </Setter.Value>
                                                                 </Setter>
