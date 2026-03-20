@@ -50,7 +50,7 @@ public partial class App : Application
             smoothingAlpha: _config.SmoothingAlpha);
         _engine.Enabled = _config.Enabled;
 
-        _hookManager = new MouseHookManager(_engine, _profileManager);
+        _hookManager = new MouseHookManager(_engine);
         _hookManager.Enabled = _config.Enabled;
 
         try

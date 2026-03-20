@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using WinForms = System.Windows.Forms;
 using ScrollBoost.Interop;

@@ -68,7 +68,7 @@ Settings are stored in `config.json` next to the EXE. Editable by hand or throug
   "smoothingAlpha": 0.3,
   "velocityWindowSize": 4,
   "enabled": true,
-  "startWithWindows": false
+  "startupMode": "none"
 }
 ```
 

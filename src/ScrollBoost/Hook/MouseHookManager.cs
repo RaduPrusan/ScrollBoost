@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using ScrollBoost.Acceleration;
 using ScrollBoost.Interop;
-using ScrollBoost.Profiles;
 
 namespace ScrollBoost.Hook;
 
@@ -17,11 +16,16 @@ public class MouseHookManager : IDisposable
     private readonly AccelerationEngine _engine;
     private Thread? _hookThread;
     private uint _hookThreadId;
-    private System.Threading.Timer? _healthTimer;
+    private Timer? _healthTimer;
+    private volatile bool _enabled = true;
 
-    public bool Enabled { get; set; } = true;
+    public bool Enabled
+    {
+        get => _enabled;
+        set => _enabled = value;
+    }
 
-    public MouseHookManager(AccelerationEngine engine, ProfileManager profileManager)
+    public MouseHookManager(AccelerationEngine engine)
     {
         _engine = engine;
         _hookProc = HookCallback;
@@ -74,6 +78,13 @@ public class MouseHookManager : IDisposable
                     NativeMethods.TranslateMessage(in msg);
                     NativeMethods.DispatchMessageW(in msg);
                 }
+
+                // Message loop exited (WM_QUIT received) — clean up hook on this thread
+                if (_hookHandle != IntPtr.Zero)
+                {
+                    NativeMethods.UnhookWindowsHookEx(_hookHandle);
+                    _hookHandle = IntPtr.Zero;
+                }
             }
             catch (Exception ex)
             {
@@ -92,8 +103,8 @@ public class MouseHookManager : IDisposable
         if (threadError != null)
             throw threadError;
 
-        // Health check: periodically ask the hook thread to verify and reinstall the hook
-        _healthTimer = new System.Threading.Timer(_ =>
+        // Health check: periodically ask the hook thread to reinstall
+        _healthTimer = new Timer(_ =>
         {
             if (_hookThreadId != 0)
                 NativeMethods.PostThreadMessageW(_hookThreadId, WM_APP_REHOOK, UIntPtr.Zero, IntPtr.Zero);
@@ -102,15 +113,17 @@ public class MouseHookManager : IDisposable
 
     public void Uninstall()
     {
-        _healthTimer?.Dispose();
-        _healthTimer = null;
-
-        if (_hookHandle != IntPtr.Zero)
+        // Stop health timer first and wait for any in-flight callback
+        if (_healthTimer != null)
         {
-            NativeMethods.UnhookWindowsHookEx(_hookHandle);
-            _hookHandle = IntPtr.Zero;
+            var timerDone = new ManualResetEventSlim(false);
+            _healthTimer.Dispose(timerDone.WaitHandle);
+            timerDone.Wait(2000);
+            timerDone.Dispose();
+            _healthTimer = null;
         }
 
+        // Post WM_QUIT — the hook thread will unhook and exit cleanly
         if (_hookThread != null && _hookThreadId != 0)
         {
             NativeMethods.PostThreadMessageW(_hookThreadId, NativeMethods.WM_QUIT, UIntPtr.Zero, IntPtr.Zero);
@@ -122,7 +135,7 @@ public class MouseHookManager : IDisposable
 
     private unsafe IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
-        if (nCode >= 0 && Enabled && wParam == (IntPtr)NativeMethods.WM_MOUSEWHEEL)
+        if (nCode >= 0 && _enabled && wParam == (IntPtr)NativeMethods.WM_MOUSEWHEEL)
         {
             var hookStruct = (NativeMethods.MSLLHOOKSTRUCT*)lParam;
 
@@ -135,13 +148,9 @@ public class MouseHookManager : IDisposable
             int delta = (short)(hookStruct->mouseData >> 16);
             int modifiedDelta = _engine.ProcessScroll(delta, (long)hookStruct->time);
 
-            // Send WM_MOUSEWHEEL directly to the target window — bypasses hook chain entirely
             IntPtr targetHwnd = NativeMethods.WindowFromPoint(hookStruct->pt);
             if (targetHwnd != IntPtr.Zero)
             {
-                // Walk to the root/top-level window — WM_MOUSEWHEEL is sent to the focus window
-                // but we use the window under the cursor (Windows 10+ behavior)
-                // Build modifier key flags for low word of wParam
                 uint modifiers = 0;
                 if ((NativeMethods.GetKeyState(NativeMethods.VK_CONTROL) & 0x8000) != 0) modifiers |= (uint)NativeMethods.MK_CONTROL;
                 if ((NativeMethods.GetKeyState(NativeMethods.VK_SHIFT) & 0x8000) != 0) modifiers |= (uint)NativeMethods.MK_SHIFT;
@@ -149,14 +158,15 @@ public class MouseHookManager : IDisposable
                 if ((NativeMethods.GetKeyState(NativeMethods.VK_MBUTTON) & 0x8000) != 0) modifiers |= (uint)NativeMethods.MK_MBUTTON;
                 if ((NativeMethods.GetKeyState(NativeMethods.VK_RBUTTON) & 0x8000) != 0) modifiers |= (uint)NativeMethods.MK_RBUTTON;
                 uint wp = (uint)(((ushort)(short)modifiedDelta) << 16) | modifiers;
-                // lParam = cursor position in screen coords (MAKELPARAM(x, y))
-                IntPtr lp = (IntPtr)((hookStruct->pt.y << 16) | (hookStruct->pt.x & 0xFFFF));
+
+                // MAKELPARAM: pack two signed 16-bit values (safe for negative multi-monitor coords)
+                IntPtr lp = (IntPtr)((int)((ushort)(short)hookStruct->pt.y << 16) | (ushort)(short)hookStruct->pt.x);
 
                 NativeMethods.PostMessageW(targetHwnd, NativeMethods.WM_MOUSEWHEEL,
                     (UIntPtr)wp, lp);
             }
 
-            return (IntPtr)1; // Suppress original
+            return (IntPtr)1;
         }
 
         return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);

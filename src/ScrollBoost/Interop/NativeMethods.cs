@@ -8,9 +8,7 @@ internal static partial class NativeMethods
 {
     internal const int WH_MOUSE_LL = 14;
     internal const int WM_MOUSEWHEEL = 0x020A;
-    internal const int WM_MOUSEHWHEEL = 0x020E;
     internal const uint LLMHF_INJECTED = 0x01;
-    internal const int WHEEL_DELTA = 120;
 
     internal const int MK_CONTROL = 0x0008;
     internal const int MK_SHIFT = 0x0004;

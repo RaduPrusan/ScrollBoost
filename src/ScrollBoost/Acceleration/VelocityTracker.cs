@@ -45,9 +45,6 @@ public class VelocityTracker
             return 0;
         }
 
-        int oldest = _count < _windowSize
-            ? 0
-            : _head;
         int newest = (_head - 1 + _windowSize) % _windowSize;
 
         int oldestIndex = _count < _windowSize

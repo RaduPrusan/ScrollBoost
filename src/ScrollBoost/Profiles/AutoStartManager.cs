@@ -89,7 +89,12 @@ public static class AutoStartManager
             };
 
             using var process = Process.Start(psi);
-            process?.WaitForExit(5000);
+            if (process != null)
+            {
+                process.StandardOutput.ReadToEnd();
+                process.StandardError.ReadToEnd();
+                process.WaitForExit(5000);
+            }
         }
         catch { }
     }
@@ -109,7 +114,12 @@ public static class AutoStartManager
             };
 
             using var process = Process.Start(psi);
-            process?.WaitForExit(5000);
+            if (process != null)
+            {
+                process.StandardOutput.ReadToEnd();
+                process.StandardError.ReadToEnd();
+                process.WaitForExit(5000);
+            }
         }
         catch { }
     }
@@ -129,8 +139,14 @@ public static class AutoStartManager
             };
 
             using var process = Process.Start(psi);
-            process?.WaitForExit(3000);
-            return process?.ExitCode == 0;
+            if (process != null)
+            {
+                process.StandardOutput.ReadToEnd();
+                process.StandardError.ReadToEnd();
+                process.WaitForExit(3000);
+                return process.ExitCode == 0;
+            }
+            return false;
         }
         catch { return false; }
     }
