@@ -20,6 +20,7 @@ public class MouseHookManager : IDisposable
     private readonly Stopwatch _cacheTimer = Stopwatch.StartNew();
     private bool _isInjecting;
     private Timer? _healthCheckTimer;
+    private System.Windows.Threading.Dispatcher? _uiDispatcher;
     private IAccelerationCurve? _cachedCurve;
     private ScrollProfile? _cachedProfile;
 
@@ -51,6 +52,10 @@ public class MouseHookManager : IDisposable
             throw new InvalidOperationException(
                 $"Failed to install mouse hook. Error: {Marshal.GetLastWin32Error()}");
 
+        // NOTE: Health check must run on the UI thread (the hook thread) because
+        // SetWindowsHookExW requires the installing thread to pump a message loop.
+        // We store a reference to the dispatcher and use it for reinstallation.
+        _uiDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
         _healthCheckTimer = new Timer(_ => HealthCheck(), null, 30000, 30000);
     }
 
@@ -182,9 +187,13 @@ public class MouseHookManager : IDisposable
 
     private void HealthCheck()
     {
-        if (Enabled)
+        if (Enabled && _uiDispatcher != null)
         {
-            try { Install(); } catch { /* will retry next tick */ }
+            // Must reinstall on the UI thread — WH_MOUSE_LL requires a message pump
+            _uiDispatcher.BeginInvoke(() =>
+            {
+                try { Install(); } catch { /* will retry next tick */ }
+            });
         }
     }
 
