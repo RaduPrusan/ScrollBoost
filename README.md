@@ -23,9 +23,9 @@ Configurable scroll acceleration for Windows 11. Makes your mouse wheel velocity
 
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
-| Scroll Speed | 1x – 5x | 1.5x | Base multiplier applied to every scroll event |
-| Acceleration | 0.0 – 1.0 | 0.4 | How aggressively speed ramps up with velocity |
-| Max Speed Cap | 2x – 30x | 12x | Upper bound on the scroll multiplier |
+| Scroll Speed | 1x – 5x | 1.0x | Base multiplier applied to every scroll event |
+| Acceleration | 0.0 – 1.0 | 0.80 | How aggressively speed ramps up with velocity |
+| Max Speed Cap | 2x – 50x | 30x | Upper bound on the scroll multiplier |
 | Curve Type | Linear / Power / Sigmoid | Sigmoid | Acceleration curve shape |
 
 ## Installation
@@ -63,10 +63,10 @@ Settings are stored in `config.json` next to the EXE. Editable through the tray 
 {
   "configVersion": 1,
   "defaultProfile": {
-    "baseMultiplier": 1.5,
+    "baseMultiplier": 1.0,
     "curveType": "sigmoid",
-    "acceleration": 0.4,
-    "maxMultiplier": 12.0
+    "acceleration": 0.8,
+    "maxMultiplier": 30.0
   },
   "appProfiles": {},
   "gestureTimeoutMs": 250,
@@ -75,8 +75,8 @@ Settings are stored in `config.json` next to the EXE. Editable through the tray 
   "enabled": true,
   "startupMode": "none",
   "windowClassRules": {
-    "ApplicationFrameWindow": "sendinput",
-    "Windows.UI.Core.CoreWindow": "sendinput"
+    "ApplicationFrameWindow": "passthrough",
+    "Windows.UI.Core.CoreWindow": "passthrough"
   }
 }
 ```

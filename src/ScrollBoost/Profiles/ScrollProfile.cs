@@ -5,14 +5,14 @@ namespace ScrollBoost.Profiles;
 public class ScrollProfile
 {
     [JsonPropertyName("baseMultiplier")]
-    public double BaseMultiplier { get; set; } = 1.5;
+    public double BaseMultiplier { get; set; } = 1.0;
 
     [JsonPropertyName("curveType")]
     public string CurveType { get; set; } = "sigmoid";
 
     [JsonPropertyName("acceleration")]
-    public double Acceleration { get; set; } = 0.4;
+    public double Acceleration { get; set; } = 0.8;
 
     [JsonPropertyName("maxMultiplier")]
-    public double MaxMultiplier { get; set; } = 12.0;
+    public double MaxMultiplier { get; set; } = 30.0;
 }

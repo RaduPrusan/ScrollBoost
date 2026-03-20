@@ -8,10 +8,10 @@ public class AppConfigTests
     public void DefaultConfig_HasSensibleDefaults()
     {
         var config = AppConfig.CreateDefault();
-        Assert.Equal(1.5, config.DefaultProfile.BaseMultiplier);
+        Assert.Equal(1.0, config.DefaultProfile.BaseMultiplier);
         Assert.Equal("sigmoid", config.DefaultProfile.CurveType);
-        Assert.Equal(0.4, config.DefaultProfile.Acceleration);
-        Assert.Equal(12.0, config.DefaultProfile.MaxMultiplier);
+        Assert.Equal(0.8, config.DefaultProfile.Acceleration);
+        Assert.Equal(30.0, config.DefaultProfile.MaxMultiplier);
         Assert.True(config.Enabled);
         Assert.Equal("none", config.StartupMode);
     }
@@ -50,7 +50,7 @@ public class AppConfigTests
     public void FromJson_InvalidJson_ReturnsDefault()
     {
         var config = AppConfig.FromJson("not valid json {{{");
-        Assert.Equal(1.5, config.DefaultProfile.BaseMultiplier);
+        Assert.Equal(1.0, config.DefaultProfile.BaseMultiplier);
     }
 
     [Fact]

@@ -149,7 +149,7 @@
                                Margin="0,2,0,6"/>
                     <Slider x:Name="SpeedSlider"
                             Minimum="1" Maximum="5"
-                            Value="1.5"
+                            Value="1.0"
                             TickFrequency="0.1"
                             IsSnapToTickEnabled="True"
                             Margin="0,0,0,14"
@@ -254,7 +254,7 @@
                                Margin="0,2,0,6"/>
                     <Slider x:Name="AccelSlider"
                             Minimum="0" Maximum="1"
-                            Value="0.4"
+                            Value="0.8"
                             TickFrequency="0.05"
                             IsSnapToTickEnabled="True"
                             Margin="0,0,0,14"
@@ -349,8 +349,8 @@
                                FontSize="11"
                                Margin="0,2,0,6"/>
                     <Slider x:Name="MaxSlider"
-                            Minimum="2" Maximum="30"
-                            Value="12"
+                            Minimum="2" Maximum="50"
+                            Value="30"
                             TickFrequency="1"
                             IsSnapToTickEnabled="True"
                             Margin="0,0,0,14"

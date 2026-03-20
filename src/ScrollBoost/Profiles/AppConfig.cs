@@ -45,8 +45,8 @@ public class AppConfig
     [JsonPropertyName("windowClassRules")]
     public Dictionary<string, string> WindowClassRules { get; set; } = new()
     {
-        ["ApplicationFrameWindow"] = "sendinput",
-        ["Windows.UI.Core.CoreWindow"] = "sendinput"
+        ["ApplicationFrameWindow"] = "passthrough",
+        ["Windows.UI.Core.CoreWindow"] = "passthrough"
     };
 
     /// <summary>
